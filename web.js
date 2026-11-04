@@ -35,7 +35,13 @@
     document.getElementById("gOk").onclick=()=>{document.getElementById("gate").hidden=true;};resolveDb(null);return;}
   firebase.initializeApp(cfg);
   const auth=firebase.auth(), fs=firebase.firestore();
-  try{fs.enablePersistence({synchronizeTabs:true}).catch(()=>{});}catch(e){}
+  // Live sync: keep one open connection per device (no offline cache that can go stale),
+  // fall back to long-polling where a network blocks streaming, and reconnect when the app comes back on screen.
+  try{fs.settings({experimentalAutoDetectLongPolling:true,merge:true});}catch(e){}
+  let lastKick=0;
+  const kick=()=>{if(Date.now()-lastKick<3000)return;lastKick=Date.now();fs.disableNetwork().then(()=>fs.enableNetwork()).catch(()=>{});};
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")kick();});
+  addEventListener("focus",kick);addEventListener("online",kick);addEventListener("pageshow",e=>{if(e.persisted)kick();});
   function showSignIn(err){
     const g=gate(`<form class="gcard" id="gForm"><h2>★ Shift Schedule</h2><p>Sign in to sync your schedule on every device.</p>
       <button type="button" class="ggl" id="gGoogle"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.6 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.6 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.1-13.4-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Continue with Google</button>
