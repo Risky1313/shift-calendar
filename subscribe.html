@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Work Shifts Calendar</title>
+<style>
+:root{--bg:#eef1f6;--card:#fff;--fg:#13203a;--muted:#5d6a80;--navy:#13203a;--gold:#e9a92b}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#141d2e;--fg:#e8edf6;--muted:#97a3b8}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,system-ui,sans-serif}
+header{background:linear-gradient(160deg,#13203a,#1d3557);color:#fff;padding:32px 16px 56px;text-align:center}
+h1{margin:0;font-size:1.6rem;letter-spacing:.02em}header p{margin:4px 0 0;opacity:.8}
+main{max-width:480px;margin:-36px auto 32px;padding:0 16px}
+.card{background:var(--card);border-radius:18px;padding:20px;box-shadow:0 6px 24px rgba(0,0,0,.08);margin-bottom:14px}
+a.btn{display:block;text-align:center;background:var(--gold);color:#13203a;font-weight:800;text-decoration:none;padding:16px;border-radius:14px;font-size:1.1rem}
+a.sec{display:block;text-align:center;margin-top:12px;color:var(--muted)}
+ol{padding-left:20px;margin:8px 0 0}li{margin:4px 0}.k{font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+</style></head><body>
+<header><h1>★ Work Shifts</h1><p>Rotation, paydays and holidays for Apple Calendar</p></header>
+<main>
+  <div class="card">
+    <a class="btn" id="sub" href="webcal://risky1313.github.io/shift-calendar/work-shifts.ics">Subscribe in Apple Calendar</a>
+    <a class="sec" href="work-shifts.ics">or download the file once</a>
+  </div>
+  <div class="card">
+    <div class="k">How it works</div>
+    <ol>
+      <li>Tap <b>Subscribe in Apple Calendar</b>, then <b>Subscribe</b>, then <b>Add</b>.</li>
+      <li>Your shifts, paydays and holidays show up and stay up to date by themselves.</li>
+      <li>Each shift has a 1-hour reminder. On iPhone, check that <b>Remove Alerts</b> is off for this calendar if you want them.</li>
+    </ol>
+  </div>
+</main>
+</body></html>

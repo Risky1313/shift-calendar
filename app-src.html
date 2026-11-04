@@ -1,0 +1,1103 @@
+<title>Shift Schedule</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Schedule">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: navy header band with badge star → sticky pill tabs (Today / Calendar / Pay & leave) → one column of soft cards; editors open as a full page */
+:root{
+  --bg:#eef1f6; --card:#ffffff; --fg:#13203a; --muted:#5d6a80; --line:#dde2ea; --raised:#f4f6fa;
+  --navy:#0f2342; --navy2:#1b3561; --on-navy:#ffffff; --gold:#e3a72f; --gold-ink:#3a2700;
+  --badge:#13203a; --badge-ink:#ffffff; --accent:#2a5bd7;
+  --morning:#f7c948; --morning-ink:#3a2a00;
+  --aft:#ec6a5a; --aft-ink:#ffffff;
+  --night:#2a9d68; --night-ink:#ffffff;
+  --off:#ffffff; --off-ink:#7a8598; --pay:#13203a;
+  --shadow:0 1px 2px rgba(19,32,58,.06),0 6px 18px rgba(19,32,58,.07);
+  --display:"Saira Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1220; --card:#141d2e; --fg:#e8edf6; --muted:#97a3b8; --line:#253149; --raised:#1a2438;
+  --navy:#0a1730; --navy2:#16294b; --badge:#dfe7f5; --badge-ink:#0b1220; --accent:#8fb0ff;
+  --off:#1b2536; --off-ink:#8e9ab0; --pay:#ffffff; --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1220; --card:#141d2e; --fg:#e8edf6; --muted:#97a3b8; --line:#253149; --raised:#1a2438;
+  --navy:#0a1730; --navy2:#16294b; --badge:#dfe7f5; --badge-ink:#0b1220; --accent:#8fb0ff;
+  --off:#1b2536; --off-ink:#8e9ab0; --pay:#ffffff; --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;background:var(--navy)}
+body{min-height:100vh;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.4;padding:0 0 48px;-webkit-tap-highlight-color:transparent}
+html,body{overscroll-behavior-y:none}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--navy)}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.gut{padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.inner{max-width:1100px;margin:0 auto}
+/* header band */
+.band{background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 100%);color:var(--on-navy);padding-block:calc(16px + env(safe-area-inset-top,0px)) 54px}
+@media (display-mode: standalone){.band{padding-top:calc(60px + env(safe-area-inset-top,0px))}}
+.hdrR{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.themeBtn{font:inherit;font-size:.72rem;font-weight:600;color:inherit;border:0;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.12);display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.themeBtn svg{width:14px;height:14px}
+.band .inner{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .star{width:34px;height:34px;flex:none;color:var(--gold)}
+.brand h1{font-family:var(--display);font-weight:800;font-size:1.45rem;letter-spacing:.03em;text-transform:uppercase;margin:0;line-height:1}
+.brand .date{font-size:.85rem;opacity:.8;margin-top:3px}
+.syncpill{font-size:.72rem;font-weight:600;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.12);white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.syncpill i{width:7px;height:7px;border-radius:50%;background:#7fe0a8;display:inline-block}
+.syncpill.bad i{background:#ffb15c}
+/* sticky tabs */
+.tabsWrap{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;margin-top:-40px;padding-block:6px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--card);border-radius:14px;padding:4px;box-shadow:var(--shadow);max-width:520px;margin:0 auto}
+.tabs button{border:0;background:transparent;border-radius:10px;padding:10px 6px;font-weight:700;font-size:.9rem;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:6px}
+.tabs button svg{width:17px;height:17px;flex:none}
+@media (max-width:430px){.tabs button svg{display:none}.tabs button{font-size:.88rem}}
+.tabs button[aria-pressed="true"]{background:var(--navy);color:#fff}
+main .inner>*,section,.card,.inner{min-width:0}
+.inner{width:100%}
+main{display:flex;flex-direction:column;gap:14px;padding-top:10px}
+.card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:16px;min-width:0}
+.card h2{font-family:var(--display);font-weight:800;font-size:1.25rem;margin:0;line-height:1.1;letter-spacing:.01em}
+.k{font-size:.7rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.ver{text-align:center;font-size:.68rem;letter-spacing:.06em;color:var(--muted);opacity:.7;margin:28px 0 0;font-variant-numeric:tabular-nums}
+.foot{font-size:.8rem;color:var(--muted);margin:0;max-width:70ch}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.row .grow{margin-right:auto}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:9px 14px;font-weight:700;font-size:.9rem;display:inline-flex;align-items:center;gap:7px;min-height:42px}
+.btn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+:root[data-theme="dark"] .btn.primary{background:var(--accent);border-color:var(--accent);color:#0b1220}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn.primary{background:var(--accent);border-color:var(--accent);color:#0b1220}}
+.btn svg{width:17px;height:17px}
+.btn:active,.tabs button:active,.d:active,.chip:active{transform:scale(.97)}
+.iconbtn{border:1px solid var(--line);background:var(--card);width:42px;height:42px;border-radius:12px;display:grid;place-items:center;flex:none}
+.iconbtn svg{width:18px;height:18px}
+.iconbtn:disabled{opacity:.3}
+.M{background:var(--morning);color:var(--morning-ink)}
+.N{background:var(--aft);color:var(--aft-ink)}
+.X{background:var(--night);color:var(--night-ink)}
+.O{background:var(--off);color:var(--off-ink)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:1px}
+.dot.O{box-shadow:inset 0 0 0 1.5px var(--line)}
+.tg{font-family:var(--display);font-weight:700;font-size:.7rem;letter-spacing:.03em;line-height:1;padding:3px 4px;border-radius:5px;background:var(--badge);color:var(--badge-ink);display:inline-block}
+.banner{background:#fff4e0;color:#5a3a00;border-radius:12px;padding:10px 12px;font-size:.88rem}
+/* TODAY */
+.hero{border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.hero.O{background:var(--card);color:var(--fg)}
+.hero .k{color:inherit;opacity:.75}
+.hero .big{font-family:var(--display);font-weight:800;font-size:2.8rem;line-height:.95;letter-spacing:.01em}
+.hero .hrs{font-size:1.05rem;font-weight:600}
+.hero .cd{display:inline-flex;align-self:flex-start;align-items:center;gap:6px;margin-top:6px;padding:6px 11px;border-radius:999px;background:rgba(0,0,0,.12);font-weight:700;font-size:.85rem}
+.hero.O .cd{background:var(--raised)}
+.hero .tags{display:flex;gap:4px;flex-wrap:wrap}
+.hero .edit{position:absolute;top:14px;right:14px;border:0;border-radius:10px;padding:6px 10px;font-weight:700;font-size:.8rem;background:rgba(0,0,0,.12);color:inherit}
+.hero.O .edit{background:var(--raised)}
+.strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;padding:4px}
+.strip::-webkit-scrollbar{display:none}
+.chip{min-width:0;border:0;border-radius:12px;padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:2px;font-variant-numeric:tabular-nums;position:relative}
+.chip.O{box-shadow:inset 0 0 0 1px var(--line)}
+.chip.pay{box-shadow:inset 0 0 0 3px var(--pay)}
+.chip .w{font-size:.62rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.8}
+.chip .n{font-family:var(--display);font-weight:800;font-size:1.25rem;line-height:1}
+.chip .l{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.chip .tdot{position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:currentColor}
+.chip.today{box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--fg)}
+.chip.today.pay{box-shadow:inset 0 0 0 3px var(--pay),0 0 0 2px var(--card),0 0 0 4px var(--fg)}
+.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.stat .v{font-family:var(--display);font-weight:800;font-size:1.45rem;line-height:1.1;margin-top:4px}
+.stat .s{font-size:.82rem;color:var(--muted)}
+.balmini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.balmini div{background:var(--raised);border-radius:12px;padding:8px 10px}
+.balmini b{display:block;font-family:var(--display);font-size:1.3rem;font-variant-numeric:tabular-nums}
+.balmini span{font-size:.72rem;color:var(--muted);font-weight:600}
+.uplist{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column}
+.uplist li{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-top:1px solid var(--line);font-size:.92rem}
+.uplist li:first-child{border-top:0}
+.uplist span{color:var(--muted);white-space:nowrap}
+.link{border:0;background:none;color:var(--accent);font-weight:700;padding:0;font-size:.85rem}
+/* CALENDAR */
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.calhead h2{font-family:var(--display);font-weight:800;font-size:1.8rem;margin:0;line-height:1;text-align:center}
+.stats{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums;text-align:center;margin-top:3px}
+.seg{display:inline-flex;background:var(--raised);border-radius:12px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-weight:700;font-size:.88rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.calbar{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:.78rem;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:13px;height:13px;border-radius:4px;display:inline-block}
+.sw.O{box-shadow:inset 0 0 0 1px var(--line)}
+.sw.pay{background:transparent;box-shadow:inset 0 0 0 2.5px var(--pay)}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.dow{font-size:.66rem;text-align:center;color:var(--muted);font-weight:700;letter-spacing:.08em;padding-bottom:2px}
+.d{border:0;border-radius:12px;min-height:70px;padding:6px 4px 5px;display:flex;flex-direction:column;align-items:stretch;gap:2px;text-align:left;font-variant-numeric:tabular-nums;position:relative;min-width:0;transition:transform .08s}
+.d.O{box-shadow:inset 0 0 0 1px var(--line)}
+.d .n{font-weight:800;font-size:.95rem;line-height:1;padding-left:3px}
+.d .s{font-family:var(--display);font-weight:700;font-size:.7rem;letter-spacing:.05em;line-height:1;padding-left:3px;text-transform:uppercase}
+.d.O .s{opacity:.7}
+.d .tags{display:flex;flex-wrap:wrap;gap:2px;margin-top:auto}
+.d .tg{font-size:.62rem;padding:2px 3px}
+.d.pay{box-shadow:inset 0 0 0 3px var(--pay)}
+.d.istoday::after{content:"";position:absolute;inset:-3px;border-radius:14px;border:2px solid var(--accent);pointer-events:none}
+.d .ov{font-size:.58rem;font-weight:700;opacity:.85;padding-left:3px}
+.d .note{position:absolute;bottom:6px;left:6px;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.6}
+.d .hol{position:absolute;bottom:5px;right:5px;font-size:.7rem;line-height:1}
+.d.empty{background:transparent;box-shadow:none;pointer-events:none}
+@media (min-width:760px){.d{min-height:96px;padding:8px}.d .n{font-size:1.05rem}.d .s{font-size:.8rem}.d .tg{font-size:.72rem}}
+.swipeable{touch-action:pan-y}
+.slide{animation:slide .2s ease-out}
+@keyframes slide{from{opacity:.4;transform:translateX(var(--dx,0))}}
+.hlist{list-style:none;margin:12px 0 0;padding:10px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:3px;font-size:.84rem}
+.hlist li{display:grid;grid-template-columns:44px 1fr;gap:6px;color:var(--muted)}
+.hlist b{color:var(--fg);font-variant-numeric:tabular-nums}
+.tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tools .btn{justify-content:center;flex-direction:row;gap:6px;padding:8px 6px;font-size:.78rem;border-radius:12px;min-height:44px;text-align:center;line-height:1.15}
+.tools .btn svg{width:18px;height:18px;flex:none}
+.year{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.mini{background:var(--card);border:0;border-radius:16px;box-shadow:var(--shadow);padding:12px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.mini h3{font-family:var(--display);font-weight:800;font-size:1.15rem;margin:0;display:flex;justify-content:space-between;align-items:baseline}
+.mini h3 small{font-family:var(--body);font-weight:500;font-size:.72rem;color:var(--muted)}
+.mini .grid{gap:2px}
+.mini .dow{font-size:.58rem}
+.mini .hlist{margin-top:4px;padding-top:6px;font-size:.72rem}
+.md{border-radius:5px;height:26px;font-size:.7rem;font-weight:700;display:grid;place-items:center;position:relative;font-variant-numeric:tabular-nums}
+.md.O{box-shadow:inset 0 0 0 1px var(--line);font-weight:500}
+.md.pay{box-shadow:inset 0 0 0 2px var(--pay)}
+.md.tagged::after{content:"";position:absolute;top:2px;right:2px;width:5px;height:5px;border-radius:50%;background:var(--badge)}
+.md.hol::before{content:"★";position:absolute;top:0;left:2px;font-size:.5rem;line-height:1}
+.md.istoday{outline:2px solid var(--accent);outline-offset:1px}
+/* PAY */
+.paygrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px}
+.panel{display:flex;flex-direction:column;gap:10px}
+.ph{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.bal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.bal.four{grid-template-columns:repeat(auto-fit,minmax(78px,1fr))}
+.bal div{background:var(--raised);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.bal .k{font-size:.64rem}
+.bal .v{font-family:var(--display);font-weight:800;font-size:1.5rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.bal .s{font-size:.72rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.mnav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mnav h2{font-family:var(--display);font-weight:800;font-size:1.3rem;margin:0;text-align:center}
+.tsbox{display:flex;flex-direction:column;gap:14px}
+.pbadge{display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--raised);color:var(--muted);margin-right:4px}
+.pbadge.cur{background:#2a9d68;color:#fff}
+.tsweek{display:flex;flex-direction:column;gap:6px}
+.tshead{font-weight:800;font-size:.75rem;letter-spacing:.08em;color:var(--muted)}
+.tsrow{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+.tswrap{overflow-x:auto;flex:1 1 520px;min-width:0}
+table.ts{border-collapse:separate;border-spacing:0;width:100%;font-variant-numeric:tabular-nums;font-size:.7rem;table-layout:fixed;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+table.ts th,table.ts td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:4px 1px;text-align:center;line-height:1.2}
+table.ts tr>*:last-child{border-right:0}
+table.ts th:first-child{text-align:left;font-weight:600;width:50px;font-size:.6rem;color:var(--muted);padding-left:5px;background:var(--raised)}
+table.ts tr:first-child th{font-weight:800;color:var(--fg);font-size:.72rem;background:var(--raised)}
+table.ts td.dt{font-weight:700}
+table.ts tr.tot td{background:var(--raised)}
+table.ts td[data-n]{cursor:pointer}
+table.ts tr.hl th,table.ts tr.hl td{border-bottom:0;padding-top:2px;background:transparent}
+@media (min-width:760px){table.ts{font-size:.85rem}table.ts th:first-child{width:100px;font-size:.72rem}}
+.tsh{font-size:.6rem;color:var(--muted);display:block;line-height:1.1}
+.offw{color:var(--muted);font-weight:600}
+.tstot{background:var(--raised);border-radius:12px;padding:8px 12px;font-size:.8rem;display:grid;grid-template-columns:repeat(3,minmax(60px,1fr));gap:2px 14px;flex:1 1 100%;font-variant-numeric:tabular-nums}
+.tstot .tt{grid-column:1/-1;font-weight:800}
+.tstot div{display:flex;justify-content:space-between;gap:6px}
+.tstot .sep{grid-column:1/-1;border-top:1px solid var(--line);margin:2px 0}
+@media (min-width:760px){.tstot{grid-template-columns:1fr;flex:0 0 130px}}
+.tscom{font-size:.88rem}
+.tsul{margin:4px 0 0;padding-left:20px}
+.tsul li{margin:2px 0}
+/* EDITOR PAGES */
+.sheetpage{display:flex;justify-content:center;padding-block:calc(10px + env(safe-area-inset-top,0px)) 120px}
+.sheettop{position:sticky;top:0;z-index:5;background:var(--card);margin:-18px -18px 0;padding:10px 18px 12px;border-radius:20px 20px 0 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+@media (display-mode: standalone){.sheettop{top:env(safe-area-inset-top,0px);padding-top:22px}}
+.sheettop{touch-action:none}
+.grab{align-self:center;width:40px;height:5px;border-radius:3px;background:var(--line)}
+.sheet{background:var(--card);color:var(--fg);width:100%;max-width:560px;border-radius:20px;box-shadow:var(--shadow);padding:18px;display:flex;flex-direction:column;gap:16px}
+.sheet h3{font-family:var(--display);font-weight:800;font-size:1.6rem;margin:0;line-height:1.1}
+.sheet .sub{color:var(--muted);font-size:.88rem;margin:4px 0 0}
+.lbl{font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tagpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:6px}
+.tagpick button{border:1px solid var(--line);background:var(--raised);border-radius:12px;padding:10px;text-align:left;display:flex;gap:8px;align-items:center;min-width:0;min-height:44px}
+.tagpick button .nm{font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tagpick button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);background:var(--card)}
+.shiftpick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.shiftpick button{border:1px solid var(--line);border-radius:12px;padding:10px 4px;font-weight:700;font-size:.82rem;background:var(--raised);min-height:44px}
+.shiftpick button.M,.shiftpick button.N,.shiftpick button.X{border-color:transparent;opacity:.45}
+.shiftpick button.M{background:var(--morning);color:var(--morning-ink)}
+.shiftpick button.N{background:var(--aft);color:var(--aft-ink)}
+.shiftpick button.X{background:var(--night);color:var(--night-ink)}
+.shiftpick button[aria-pressed="true"]{opacity:1;box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--fg)}
+.group{background:var(--raised);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.group .gt{font-weight:800;font-size:.95rem}
+.group .sub{margin:0}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+input[type=time],input[type=date]{-webkit-appearance:none;appearance:none;display:block;max-width:100%;box-sizing:border-box;text-align:left}
+input[type=time]::-webkit-date-and-time-value,input[type=date]::-webkit-date-and-time-value{text-align:left}
+textarea,input[type=text],input[type=number],input[type=date],input[type=time],select{width:100%;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 11px;font:inherit;font-size:16px;color:var(--fg);min-width:0;min-height:44px}
+textarea{min-height:70px;resize:vertical}
+.check{display:flex;gap:10px;align-items:center;font-size:.92rem}
+.check input{width:20px;height:20px}
+.tagrow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.tagrow .nm{flex:1;min-width:0}
+.tagrow button{border:0;background:transparent;color:var(--aft);font-size:.85rem;font-weight:700}
+.addtag{display:grid;grid-template-columns:90px 1fr auto;gap:6px}
+.preview{border-radius:12px;border:1px solid var(--line);width:100%;height:auto;display:block;background:#fff}
+.err{color:var(--aft);font-size:.86rem;margin:0}
+.savehint{background:var(--raised);border-radius:12px;padding:10px 12px;font-size:.88rem;line-height:1.45}
+.status{display:none}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .2s ease-out}@keyframes up{from{transform:translateY(12px);opacity:.5}}}
+@media (prefers-reduced-motion:reduce){.slide{animation:none}}
+</style>
+
+
+<div class="wrap">
+  <header class="band gut">
+    <div class="inner">
+      <div class="brand"><svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 1.5l2.6 5.6 6.1.7-4.5 4.2 1.2 6.1L12 15.1l-5.4 3 1.2-6.1-4.5-4.2 6.1-.7z"/></svg>
+        <div><h1>Shift Schedule</h1><div class="date" id="hdrDate"></div></div></div>
+      <div class="hdrR"><span class="syncpill" id="syncPill"><i></i><span id="status">Connecting…</span></span>
+        <button class="themeBtn" id="themeBtn" aria-label="Change light or dark look"></button></div>
+    </div>
+  </header>
+  <div class="tabsWrap gut"><nav class="tabs" aria-label="Sections">
+    <button id="tToday" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Today</button>
+    <button id="tCal" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Calendar</button>
+    <button id="vPay" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="2" y="6" width="20" height="13" rx="3"/><circle cx="12" cy="12.5" r="2.5"/></svg>Pay &amp; leave</button>
+  </nav></div>
+
+  <main class="gut"><div class="inner" style="display:flex;flex-direction:column;gap:14px">
+  <div id="banner" class="banner" hidden></div>
+
+  <section id="todayView" style="display:flex;flex-direction:column;gap:14px">
+    <div id="hero" class="hero"></div>
+    <div class="card" style="padding:14px 12px">
+      <div class="row" style="justify-content:space-between;padding:0 4px 8px"><span class="k">Next 7 days</span><button class="link" id="toCal">Full calendar ›</button></div>
+      <div class="strip" id="strip"></div>
+    </div>
+    <div class="duo" id="today"></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><span class="k">Leave balance</span><button class="link" id="toPay">Pay &amp; leave ›</button></div><div class="balmini" id="balMini"></div></div>
+    <div class="card"><span class="k">Upcoming holidays</span><ul class="uplist" id="upHol"></ul></div>
+  </section>
+
+  <section id="calView" hidden style="display:flex;flex-direction:column;gap:14px">
+    <div class="calbar">
+      <div class="seg" role="group" aria-label="View"><button id="vMonth" aria-pressed="true">Month</button><button id="vYear" aria-pressed="false">Year</button></div>
+      <div class="seg" role="group" aria-label="Year" id="yearSeg"></div>
+    </div>
+    <div class="tools">
+      <button class="btn" id="shareBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>Share month</button>
+      <button class="btn" id="icsBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg>Apple Calendar</button>
+      <button class="btn" id="tagsBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0L3 13V3h10l7.6 7.6a2 2 0 010 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Edit tags</button>
+    </div>
+    <div id="monthView" class="card">
+      <div class="calhead">
+        <button class="iconbtn" id="prev" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <div style="min-width:0"><h2 id="mTitle"></h2><div class="stats" id="mStats"></div></div>
+        <button class="iconbtn" id="next" aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+      <div style="height:12px"></div>
+      <div class="grid swipeable" id="mGrid"></div>
+      <div id="mHol"></div>
+      <div style="height:12px"></div>
+      <div class="legend" aria-label="Legend">
+        <span><i class="sw M"></i>Morning 6a–4p</span><span><i class="sw N"></i>Afternoon 2p–12a</span><span><i class="sw X"></i>Night 9p–7a</span>
+        <span><i class="sw O"></i>Off</span><span><i class="sw pay"></i>Payday</span><span>★ Holiday</span>
+      </div>
+    </div>
+    <section id="yearView" hidden>
+      <div class="calhead" style="justify-content:flex-start;gap:10px;margin-bottom:10px"><h2 id="yTitle"></h2><div class="stats" id="yStats"></div></div>
+      <div class="year" id="yGrid"></div>
+    </section>
+    <p class="foot">Tap a day to add leave, training, overtime or a note. Swipe the calendar left or right to change months. Nights show on the day you go in.<br><button class="link" id="bkBtn" style="margin-top:6px">Back up or restore data</button></p>
+  </section>
+
+  <section id="payView" hidden style="display:flex;flex-direction:column;gap:14px">
+    <div class="paygrid">
+      <div class="card panel">
+        <div class="ph"><h2>Leave balances</h2><button class="btn" id="balEdit">Update from paystub</button></div>
+        <div class="bal" id="bal"></div>
+        <p class="foot" id="balNote"></p>
+      </div>
+      <div class="card panel">
+        <h2 id="usedTitle">Used this year</h2>
+        <div class="bal four" id="used"></div>
+        <p class="foot">Counted from the tags on your calendar, in payroll days.</p>
+      </div>
+    </div>
+    <div class="card panel">
+      <div class="mnav">
+        <button class="iconbtn" id="pPrev" aria-label="Previous pay period"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <div style="text-align:center;min-width:0"><h2 id="pTitle"></h2><div class="stats" id="pSub"></div></div>
+        <button class="iconbtn" id="pNext" aria-label="Next pay period"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+      <div id="pTable" class="tsbox"></div>
+      <p class="foot">Laid out like the Work Attendance Record. A night you go in for at 9 PM is written on the next day. Tap any day to change it.</p>
+    </div>
+  </section>
+  </div></main>
+  <p class="ver" id="verLbl"></p>
+</div>
+
+<div id="sheetHost"></div>
+
+<script>
+// ---------- Schedule engine (verified against 2025–2026 rosters and coworker's 2027 calendar) ----------
+// 168-day cycle, M=Morning N=Afternoon X=Night O=Off. Day 0 = Sun 14 Dec 2025.
+// Index 83: the Saturday before each night block is OFF (e.g. 2/6/2027 and 7/24/2027).
+// Index 111: the Saturday before nights switch to Tue-Fri is WORKED (e.g. 3/6/2027).
+const CYCLE="OONNNNOOONNNNOOONNNNOOONNNNOMMOOOMMMMOOOMMMMOOOMMMMOOOMMOOMMMMOOOMMMMOOOMMMMOOOMMMMOXXOOOXXXXOOOXXXXOOOXXXXOOOXXOOXXXXOOOXXXXOOOXXXXOOOXXXXONNOOONNNNOOONNNNOOONNNNOOONN";
+const ANCHOR=Date.UTC(2025,11,14), PAY0=Date.UTC(2027,0,8);
+const dayIdx=(y,m,d)=>Math.round((Date.UTC(y,m,d)-ANCHOR)/864e5);
+function baseShift(y,m,d){const i=dayIdx(y,m,d);return CYCLE[((i%168)+168)%168];}
+function isPayday(y,m,d){const k=Math.round((Date.UTC(y,m,d)-PAY0)/864e5);return ((k%14)+14)%14===0;}
+const SHIFT={M:{name:"Morning",short:"Morn",hours:"6:00 AM – 4:00 PM"},N:{name:"Afternoon",short:"Aft",hours:"2:00 PM – 12:00 AM"},X:{name:"Night",short:"Night",hours:"9:00 PM – 7:00 AM"},O:{name:"Off",short:"Off",hours:""}};
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW=["S","M","T","W","T","F","S"];
+const DEFAULT_TAGS=[
+  {code:"AL",name:"Annual Leave"},{code:"SL",name:"Sick Leave"},{code:"ST",name:"School Training"},{code:"PT",name:"Part-Time"},
+  {code:"PH",name:"Personal Holiday"},{code:"SC",name:"Shift Change"},{code:"DC",name:"Days Change"},{code:"OT",name:"Overtime"}];
+const key=(y,m,d)=>y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+// Day numbers (days since 1970, UTC) make payroll math simple.
+const dn=(y,m,d)=>Math.round(Date.UTC(y,m,d)/864e5);
+const ymd=n=>{const t=new Date(n*864e5);return [t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate()];};
+const kn=n=>key(...ymd(n));
+const fmtN=(n,o)=>new Date(n*864e5).toLocaleDateString("en-US",Object.assign({timeZone:"UTC"},o||{weekday:"short",month:"short",day:"numeric"}));
+// Leave tags that draw down a balance.
+const LEAVE={AL:"vac",SL:"sck",PH:"phd"};
+// City fixed holidays (FY holiday schedule: 16 fixed days), plus Easter Sunday from the 2027 contract.
+// Pay: before 2027 only New Year's, Thanksgiving and Christmas pay overtime. From 2027: those 3 + Easter Sunday pay double OT; the other city holidays pay OT.
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,mm=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*mm+114)/31),da=((h+l-7*mm+114)%31)+1;return [mo-1,da];}
+const HOLC={};
+function holidays(y){
+  if(HOLC[y])return HOLC[y];
+  const h={};
+  const nth=(m,wd,n)=>1+((wd-new Date(y,m,1).getDay()+7)%7)+7*(n-1);
+  const last=(m,wd)=>{const L=new Date(y,m+1,0);return L.getDate()-((L.getDay()-wd+7)%7);};
+  const put=(m,d,nm)=>{h[key(y,m,d)]=nm;};
+  put(0,1,"New Year's Day");put(0,nth(0,1,3),"MLK Jr. Day");put(1,nth(1,1,3),"Presidents' Day");
+  const [em,ed]=easter(y), es=new Date(y,em,ed);
+  const off=k=>{const t=new Date(es);t.setDate(t.getDate()+k);put(t.getMonth(),t.getDate(),k<0?"Good Friday":k>0?"Easter Monday":"Easter Sunday");};
+  off(-2);off(1);if(y>=2027)off(0);
+  put(4,last(4,1),"Memorial Day");put(5,19,"Juneteenth");put(6,4,"Independence Day");put(8,nth(8,1,1),"Labor Day");
+  put(9,nth(9,1,2),"Founder's Day");put(10,11,"Veterans Day");
+  put(10,nth(10,4,4),"Thanksgiving"); // the day after is not a holiday for this schedule
+  put(11,24,"Christmas Eve");put(11,25,"Christmas");put(11,31,"New Year's Eve");
+  return HOLC[y]=h;
+}
+const holiday=(y,m,d)=>holidays(y)[key(y,m,d)]||null;
+const BIG4=["New Year's Day","Thanksgiving","Christmas","Easter Sunday"];
+function holPayOf(y,name){
+  if(y>=2027)return BIG4.includes(name)?"double overtime":"overtime";
+  return BIG4.includes(name)?"overtime":"city holiday";
+}
+
+// ---------- State ----------
+const now=new Date();
+const TY=now.getFullYear(), TM=now.getMonth(), TD=now.getDate();
+const YEARS=[TY,TY+1];
+let view="today", year=TY, month=TM, lastCal="month";
+let days={};            // key -> {tags:[], shift?, note?}
+let tagList=DEFAULT_TAGS.slice();
+// Real balances live only in the signed-in database (config/balances); nothing personal is kept in this public code.
+const DEFAULT_BAL={asOf:"2026-10-24",vac:0,sck:0,phd:30,vacRate:0,sckRate:0,phdYearly:30};
+let bal=Object.assign({},DEFAULT_BAL);
+let payF=null; // payday (day number) shown in the pay view
+let db=null, dbState="connecting";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+try{const v=JSON.parse(localStorage.getItem("viewB")||"null");if(v&&v.view)view=v.view;}catch(e){}
+
+function shiftOn(y,m,d){const e=days[key(y,m,d)];return (e&&e.shift)||baseShift(y,m,d);}
+function entry(y,m,d){return days[key(y,m,d)]||null;}
+function tagName(c){const t=tagList.find(t=>t.code===c);return t?t.name:c;}
+const shiftN=n=>shiftOn(...ymd(n));
+const entryN=n=>days[kn(n)]||null;
+const isPayN=n=>isPayday(...ymd(n));
+
+// ---------- Payroll ----------
+// Normal duty hours per shift (24h clock, as written on the timesheet).
+const DEF_TIMES={M:["06:00","16:00"],N:["14:00","00:00"],X:["21:00","07:00"]};
+const mins=t=>{const [h,mi]=t.split(":").map(Number);return h*60+mi;};
+function spanHrs(a,b){if(!a||!b)return null;let dm=mins(b)-mins(a);if(dm<=0)dm+=1440;return Math.round(dm/15)/4;}
+const crosses=(a,b)=>mins(b)<=mins(a)&&mins(b)!==0; // ends next morning (an end of 00:00 counts as the same day)
+// Codes that replace regular hours on the timesheet. Only AL, SL and PH draw down a balance.
+const PAYCODES=["AL","SL","PH","CT","FL","CL","IP","IW","LW","AB","SI","HO","WU","MF","AM"];
+// Build one shift's timesheet entry from a calendar day.
+function dayWork(src){
+  const sh=shiftN(src), e=entryN(src), tags=(e&&e.tags)||[];
+  const st=tags.includes("ST"), lt=tags.find(t=>PAYCODES.includes(t));
+  let tin=e&&e.timeIn, tout=e&&e.timeOut;
+  if(!tin&&sh!=="O"){[tin,tout]=DEF_TIMES[sh];}
+  if(!tin&&st){tin="06:00";tout="16:00";}
+  const hasOT=e&&e.otHours>0;
+  if(!tin&&!hasOT&&!lt)return null;
+  const total=tin?spanHrs(tin,tout):0;
+  const w={src,sh,e,tin,tout,night:tin?crosses(tin,tout):false,codes:{},ot:hasOT?+e.otHours:0,otFrom:e&&e.otFrom,otTo:e&&e.otTo};
+  let work=total;
+  if(lt&&total){const lh=Math.max(0,Math.min(total,e.leaveHours!=null?+e.leaveHours:total));w.codes[lt]=lh;work=total-lh;w.leaveFrom=e.leaveFrom;w.leaveTo=e.leaveTo;}
+  if(work>0)w.codes[st?"ST":"RG"]=work;
+  return w;
+}
+// What goes in timesheet column n: a shift that starts and ends that day, plus a night that started the evening before.
+function payrollDay(n){
+  const out={reg:0,leave:{},ot:0,train:0,items:[],codes:{}};
+  const take=w=>{
+    out.items.push(w);
+    for(const c in w.codes){out.codes[c]=(out.codes[c]||0)+w.codes[c];
+      if(c==="RG")out.reg+=w.codes[c];else if(c==="ST")out.train+=w.codes[c];else if(LEAVE[c])out.leave[c]=(out.leave[c]||0)+w.codes[c];}
+    if(w.ot){out.ot+=w.ot;out.codes.OT=(out.codes.OT||0)+w.ot;}
+  };
+  const prev=dayWork(n-1);if(prev&&prev.night)take(prev);
+  const cur=dayWork(n);if(cur&&!cur.night)take(cur);
+  return out;
+}
+// Payday F pays the two weeks ending the Saturday before it (F-19 .. F-6).
+const periodOf=F=>[F-19,F-6];
+function paydayForDate(n){ // payday whose period contains payroll day n
+  for(let F=n+6;F<n+20;F++)if(isPayN(F)){const [a,b]=periodOf(F);if(n>=a&&n<=b)return F;}
+  return null;
+}
+function balancesAt(T){
+  const E0=dn(...bal.asOf.split("-").map((v,i)=>i===1?+v-1:+v));
+  const r={vac:+bal.vac,sck:+bal.sck,phd:+bal.phd};
+  for(let n=E0+1;n<=T;n++){
+    if(isPayN(n)&&n-6>E0){r.vac+=+bal.vacRate;r.sck+=+bal.sckRate;}
+    {const [,mm,dd]=ymd(n);if(mm===9&&dd===1)r.phd=+(bal.phdYearly!=null?bal.phdYearly:30);} // new fiscal year Oct 1
+    const p=payrollDay(n);for(const t in p.leave)r[LEAVE[t]]-=p.leave[t];
+  }
+  return r;
+}
+
+// ---------- Render ----------
+// Holiday index under a month: "★ 25  Thanksgiving"
+function holList(y,m){
+  const hl=Object.entries(holidays(y)).filter(([k])=>+k.slice(5,7)===m+1).sort();
+  return hl.length?`<ul class="hlist">${hl.map(([k,nm])=>`<li><b>★ ${+k.slice(8)}</b><span>${esc(nm)}</span></li>`).join("")}</ul>`:"";
+}
+function renderYearSeg(){
+  $("yearSeg").innerHTML=YEARS.map(y=>`<button data-y="${y}" aria-pressed="${y===year}">${y}</button>`).join("");
+}
+function renderToday(){
+  const now2=new Date(), s=shiftOn(TY,TM,TD), e=entry(TY,TM,TD), today=dn(TY,TM,TD);
+  const fmt=dt=>dt.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+  const fmtMD=dt=>dt.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  const t12f=t=>{const [h,m]=t.split(":").map(Number);return (h%12||12)+":"+String(m).padStart(2,"0")+" "+(h<12?"AM":"PM");};
+  $("hdrDate").textContent=now2.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+  // find next shift, next payday, off run
+  let nxt=null,pay=null,offStart=null;
+  for(let i=1;i<60&&(!nxt||!pay||offStart==null);i++){
+    const dt=new Date(TY,TM,TD+i),y=dt.getFullYear(),m=dt.getMonth(),d=dt.getDate(),sh=shiftOn(y,m,d);
+    if(!nxt&&sh!=="O")nxt={dt,sh};
+    if(offStart==null&&sh==="O")offStart=i;
+    if(!pay&&isPayday(y,m,d))pay={dt,i};
+  }
+  if(isPayday(TY,TM,TD))pay={dt:now2,i:0};
+  const offRun=[];{let i=s==="O"?0:offStart;for(;offRun.length<14;i++){const dt=new Date(TY,TM,TD+i);if(shiftOn(dt.getFullYear(),dt.getMonth(),dt.getDate())!=="O")break;offRun.push(dt);}}
+  // hero
+  const hm=x=>{const h=Math.floor(x/60),m=x%60;return (h?h+"h ":"")+m+"m";};
+  const nowMin=now2.getHours()*60+now2.getMinutes();
+  let big,hrs,cd;
+  const y1=new Date(TY,TM,TD-1), ys=shiftOn(y1.getFullYear(),y1.getMonth(),y1.getDate());
+  const times=(sh,ee)=>ee&&ee.timeIn&&ee.timeOut?[ee.timeIn,ee.timeOut]:DEF_TIMES[sh];
+  if(ys==="X"&&nowMin<mins(times("X",entry(y1.getFullYear(),y1.getMonth(),y1.getDate()))[1])&&s==="O"){
+    big="Night";hrs="Went in last night · out at "+t12f(times("X")[1]);cd="On shift now · "+hm(mins(times("X")[1])-nowMin)+" left";
+    $("hero").className="hero X";
+  }else if(s==="O"){
+    big="Off";hrs=nxt?`Back ${fmt(nxt.dt)} · ${SHIFT[nxt.sh].name} ${t12f(DEF_TIMES[nxt.sh][0])}`:"";
+    const days=nxt?Math.round((new Date(nxt.dt.getFullYear(),nxt.dt.getMonth(),nxt.dt.getDate())-new Date(TY,TM,TD))/864e5):0;
+    cd=days===1?"Back to work tomorrow":`${days} days until your next shift`;
+    $("hero").className="hero O";
+  }else{
+    const [a,b]=times(s,e);big=SHIFT[s].name;hrs=t12f(a)+" – "+t12f(b);
+    const st=mins(a),en=mins(b)<=st?mins(b)+1440:mins(b);
+    cd=nowMin<st?"Starts in "+hm(st-nowMin):nowMin<en?"On shift now · "+hm(en-nowMin)+" left":"Shift done for today";
+    $("hero").className="hero "+s;
+  }
+  const tags=(e&&e.tags)||[], hol=holiday(TY,TM,TD);
+  $("hero").innerHTML=`<span class="k">Today · ${fmt(now2)}${hol?" · ★ "+esc(hol):""}${isPayday(TY,TM,TD)?" · Payday":""}</span>
+    <div class="big">${big}</div><div class="hrs">${hrs}</div>
+    ${tags.length?`<div class="tags">${tags.map(t=>`<span class="tg">${esc(t)}</span>`).join("")}</div>`:""}
+    <span class="cd">${cd}</span><button class="edit" id="heroEdit">Edit day</button>`;
+  $("heroEdit").onclick=()=>openDay(TY,TM,TD);
+  // 7-day strip
+  let st="";
+  for(let i=0;i<7;i++){const dt=new Date(TY,TM,TD+i),y=dt.getFullYear(),m=dt.getMonth(),d=dt.getDate(),sh=shiftOn(y,m,d),ee=entry(y,m,d);
+    st+=`<button class="chip ${sh}${isPayday(y,m,d)?" pay":""}${i===0?" today":""}" data-k="${y}-${m}-${d}" aria-label="${fmt(dt)}: ${SHIFT[sh].name}"><span class="w">${dt.toLocaleDateString("en-US",{weekday:"short"})}</span><span class="n">${d}</span><span class="l">${SHIFT[sh].short}</span>${(ee&&ee.tags&&ee.tags.length)||holiday(y,m,d)?'<i class="tdot"></i>':""}</button>`;}
+  $("strip").innerHTML=st;
+  // duo cards
+  $("today").innerHTML=`
+    <div class="card stat"><span class="k">${s==="O"?"Off days now":"Next off days"}</span><div class="v">${offRun.map(d=>d.toLocaleDateString("en-US",{weekday:"short"})).join(", ")}</div><div class="s">${offRun.length>1?fmtMD(offRun[0])+" – "+fmtMD(offRun[offRun.length-1]):fmtMD(offRun[0])}</div></div>
+    <div class="card stat"><span class="k">Payday</span><div class="v">${pay.i===0?"Today":fmt(pay.dt)}</div><div class="s">${pay.i===0?"Every other Friday":pay.i===1?"Tomorrow":"In "+pay.i+" days"}</div></div>`;
+  // leave mini
+  const b2=balancesAt(today);
+  $("balMini").innerHTML=`<div><b>${hrs2(b2.vac)}</b><span>Vacation hrs</span></div><div><b>${hrs2(b2.sck)}</b><span>Sick hrs</span></div><div><b>${hrs2(b2.phd)}</b><span>Pers. holiday</span></div>`;
+  // upcoming holidays
+  const up=[];for(let i=0;i<400&&up.length<3;i++){const dt=new Date(TY,TM,TD+i),h=holiday(dt.getFullYear(),dt.getMonth(),dt.getDate());if(h)up.push([dt,h]);}
+  $("upHol").innerHTML=up.map(([dt,h])=>`<li><b>★ ${esc(h)}</b><span>${fmt(dt)}</span></li>`).join("");
+}
+const hrs2=v=>(Math.round(v*100)/100).toLocaleString("en-US",{maximumFractionDigits:2});
+function monthStats(y,m){
+  const n=new Date(y,m+1,0).getDate();let w=0,o=0,p=0,t=0;
+  for(let d=1;d<=n;d++){shiftOn(y,m,d)==="O"?o++:w++;if(isPayday(y,m,d))p++;const e=entry(y,m,d);if(e&&e.tags&&e.tags.length)t++;}
+  return {w,o,p,t};
+}
+function renderMonth(){
+  $("mTitle").textContent=MONTHS[month]+" "+year;
+  const st=monthStats(year,month);
+  $("mStats").textContent=`${st.w} shifts · ${st.o} off · ${st.p} payday${st.p===1?"":"s"}`;
+  const first=new Date(year,month,1).getDay(), n=new Date(year,month+1,0).getDate();
+  let h=DOW.map((x,i)=>`<div class="dow">${["SUN","MON","TUE","WED","THU","FRI","SAT"][i]}</div>`).join("");
+  for(let i=0;i<first;i++)h+=`<div class="d empty"></div>`;
+  for(let d=1;d<=n;d++){
+    const e=entry(year,month,d), s=shiftOn(year,month,d), base=baseShift(year,month,d);
+    const cls=["d",s];
+    if(isPayday(year,month,d))cls.push("pay");
+    if(year===TY&&month===TM&&d===TD)cls.push("istoday");
+    const tags=(e&&e.tags)||[], hol=holiday(year,month,d);
+    const label=`${MONTHS[month]} ${d}: ${SHIFT[s].name}${hol?", "+hol:""}${isPayday(year,month,d)?", payday":""}${tags.length?", "+tags.map(tagName).join(", "):""}`;
+    h+=`<button class="${cls.join(" ")}" data-d="${d}" aria-label="${esc(label)}"><span class="n">${d}</span><span class="s">${SHIFT[s].short}</span>${e&&e.shift&&e.shift!==base?`<span class="ov">was ${SHIFT[base].short}</span>`:""}<span class="tags">${tags.map(c=>`<span class="tg">${esc(c)}</span>`).join("")}</span>${e&&e.note?'<i class="note"></i>':""}${hol?`<span class="hol" title="${esc(hol)}">★</span>`:""}</button>`;
+  }
+  $("mGrid").innerHTML=h;
+  $("mHol").innerHTML=holList(year,month);
+  $("prev").disabled=(year===YEARS[0]&&month===0);
+  $("next").disabled=(year===YEARS[1]&&month===11);
+  $("prev").style.opacity=$("prev").disabled?.35:1;$("next").style.opacity=$("next").disabled?.35:1;
+}
+function renderYear(){
+  $("yTitle").textContent=year;
+  let W=0,O=0,P=0,T=0,h="";
+  for(let m=0;m<12;m++){
+    const st=monthStats(year,m);W+=st.w;O+=st.o;P+=st.p;T+=st.t;
+    const first=new Date(year,m,1).getDay(), n=new Date(year,m+1,0).getDate();
+    let g=DOW.map(x=>`<div class="dow">${x}</div>`).join("");
+    for(let i=0;i<first;i++)g+="<div></div>";
+    for(let d=1;d<=n;d++){
+      const s=shiftOn(year,m,d),e=entry(year,m,d);
+      const c=["md",s];if(isPayday(year,m,d))c.push("pay");if(e&&e.tags&&e.tags.length)c.push("tagged");if(holiday(year,m,d))c.push("hol");if(year===TY&&m===TM&&d===TD)c.push("istoday");
+      g+=`<div class="${c.join(" ")}">${d}</div>`;
+    }
+    h+=`<button class="mini" data-m="${m}" aria-label="Open ${MONTHS[m]} ${year}"><h3>${MONTHS[m]}<small>${st.w} shifts${st.t?` · ${st.t} tagged`:""}</small></h3><div class="grid">${g}</div>${holList(year,m)}</button>`;
+  }
+  $("yGrid").innerHTML=h;
+  $("yStats").textContent=`${W} shifts · ${O} off · ${P} paydays${T?` · ${T} tagged days`:""}`;
+}
+function render(){
+  if(!$("sheetHost").innerHTML)document.querySelector(".wrap").hidden=false;
+  renderYearSeg();renderToday();
+  const cal=view==="month"||view==="year";
+  $("tToday").setAttribute("aria-pressed",view==="today");$("tCal").setAttribute("aria-pressed",cal);$("vPay").setAttribute("aria-pressed",view==="pay");
+  $("vMonth").setAttribute("aria-pressed",view==="month");$("vYear").setAttribute("aria-pressed",view==="year");
+  $("todayView").hidden=view!=="today";$("calView").hidden=!cal;$("payView").hidden=view!=="pay";
+  $("monthView").hidden=view!=="month";$("yearView").hidden=view!=="year";
+  $("shareBtn").lastChild.textContent=view==="year"?"Share year":"Share month";
+  if(view==="month")renderMonth();else if(view==="year")renderYear();else if(view==="pay")renderPay();
+  $("status").textContent=dbState==="ok"?"Synced":dbState==="connecting"?"Connecting…":dbState==="off"?"Not syncing":"Sync error";
+  $("syncPill").classList.toggle("bad",dbState!=="ok"&&dbState!=="connecting");
+}
+function saveView(){if(view==="month"||view==="year")lastCal=view;try{localStorage.setItem("viewB",JSON.stringify({view}));}catch(e){}}
+
+// ---------- Events ----------
+$("yearSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;year=+b.dataset.y;month=year===TY?TM:0;render();});
+$("vMonth").onclick=()=>{view="month";saveView();render();};
+$("vYear").onclick=()=>{view="year";saveView();render();};
+$("vPay").onclick=()=>{view="pay";saveView();render();};
+$("tToday").onclick=()=>{view="today";saveView();render();};
+$("tCal").onclick=()=>{view=lastCal;saveView();render();};
+$("toCal").onclick=()=>{view="month";year=TY;month=TM;saveView();render();window.scrollTo(0,0);};
+$("toPay").onclick=()=>{view="pay";saveView();render();window.scrollTo(0,0);};
+$("strip").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;const [y,m,d]=b.dataset.k.split("-").map(Number);openDay(y,m,d);});
+// swipe the month grid to change months
+{let x0=null,y0=null;const g=$("mGrid");
+ g.addEventListener("touchstart",e=>{x0=e.touches[0].clientX;y0=e.touches[0].clientY;},{passive:true});
+ g.addEventListener("touchend",e=>{if(x0==null)return;const dx=e.changedTouches[0].clientX-x0,dy=e.changedTouches[0].clientY-y0;x0=null;
+   if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5){const btn=$(dx<0?"next":"prev");if(!btn.disabled){btn.click();g.style.setProperty("--dx",(dx<0?40:-40)+"px");g.classList.remove("slide");void g.offsetWidth;g.classList.add("slide");}}},{passive:true});}
+$("pPrev").onclick=()=>{if(payF-14>=dn(YEARS[0],0,1))payF-=14;render();};
+$("pNext").onclick=()=>{if(payF+14<=dn(YEARS[1],11,31))payF+=14;render();};
+$("pTable").addEventListener("click",e=>{const r=e.target.closest("td[data-n]");if(!r)return;const n=+r.dataset.n;const p=payrollDay(n);const w=p.items[0];openDay(...ymd(w?w.src:n));});
+$("balEdit").onclick=openBal;
+$("icsBtn").onclick=openICS;
+$("bkBtn").onclick=openBackup;
+$("prev").onclick=()=>{if(month===0){if(year===YEARS[0])return;year--;month=11;}else month--;render();};
+$("next").onclick=()=>{if(month===11){if(year===YEARS[1])return;year++;month=0;}else month++;render();};
+$("yGrid").addEventListener("click",e=>{const b=e.target.closest(".mini");if(!b)return;month=+b.dataset.m;view="month";saveView();render();window.scrollTo(0,0);});
+$("mGrid").addEventListener("click",e=>{const b=e.target.closest(".d[data-d]");if(b)openDay(year,month,+b.dataset.d);});
+$("tagsBtn").onclick=openTags;
+$("shareBtn").onclick=openShare;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet();});
+window.addEventListener("pageshow",()=>{if(!$("sheetHost").innerHTML)document.querySelector(".wrap").hidden=false;});
+
+// ---------- Sheets ----------
+// Editors open as a full page in normal page flow (not a fixed pop-up), so every field and button can be scrolled to on iPhone.
+let sheetScroll=0;
+function sheet(html){
+  const open=!!$("sheetHost").innerHTML;
+  if(!open)sheetScroll=window.scrollY;
+  document.querySelector(".wrap").hidden=true;
+  const bar=html.includes('class="sheettop"')?"":`<div class="sheettop"><span class="grab" aria-hidden="true"></span><div class="row" style="justify-content:flex-end"><button class="btn" id="sbClose">Close</button></div></div>`;
+  $("sheetHost").innerHTML=`<div class="sheetpage"><div class="sheet" role="dialog" aria-modal="true">${bar}${html}</div></div>`;
+  if(bar)$("sbClose").onclick=closeSheet;
+  if(!open)window.scrollTo(0,0);
+}
+// Swipe down on the top bar (grab handle) of an open page to close it: only from the bar, and only after a long pull
+(function(){
+  let y0=null,dy=0,el=null;
+  const host=document.getElementById("sheetHost");
+  host.addEventListener("touchstart",e=>{if(e.touches.length!==1||!e.target.closest(".sheettop")||e.target.closest("button,input,textarea,select")){y0=null;return;}y0=e.touches[0].clientY;dy=0;el=host.querySelector(".sheet");},{passive:true});
+  host.addEventListener("touchmove",e=>{if(y0==null||!el)return;dy=e.touches[0].clientY-y0;
+    if(dy>0){e.preventDefault();el.style.transition="none";el.style.transform=`translateY(${Math.min(dy*.6,220)}px)`;el.style.opacity=String(Math.max(.5,1-dy/600));}},{passive:false});
+  host.addEventListener("touchend",()=>{if(y0==null||!el)return;
+    if(dy>170){closeSheet();}else{el.style.transition="transform .2s ease, opacity .2s ease";el.style.transform="";el.style.opacity="";}
+    y0=null;el=null;dy=0;});
+})();
+function closeSheet(){
+  if(!$("sheetHost").innerHTML)return;
+  $("sheetHost").innerHTML="";document.querySelector(".wrap").hidden=false;window.scrollTo(0,sheetScroll);
+}
+
+function openDay(y,m,d){
+  const k=key(y,m,d), e={...(days[k]||{})}, base=baseShift(y,m,d);
+  let sel=new Set(e.tags||[]), shift=e.shift||null;
+  const dt=new Date(y,m,d);
+  const keep=()=>{["tiIn","toIn","otIn","ofIn","otoIn","lvIn","lfIn","ltIn","noteIn"].forEach(id=>{const el=$(id);if(el)e["_"+id]=el.value;});};
+  const v=(id,dflt)=>e["_"+id]!=null?e["_"+id]:(dflt==null?"":dflt);
+  const draw=()=>{
+    const cur=shift||base, def=DEF_TIMES[cur];
+    const hol=holiday(y,m,d);
+    sheet(`
+      <div class="sheettop"><span class="grab" aria-hidden="true"></span><div class="row" style="justify-content:space-between"><button class="btn" id="cancelTop">‹ Back</button><button class="btn primary" id="saveTop">Save</button></div></div>
+      <div><h3>${dt.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</h3>
+      <p class="sub">${SHIFT[base].name}${base!=="O"?" "+SHIFT[base].hours:""} on your rotation${isPayday(y,m,d)?" · Payday":""}${hol?` · ★ ${hol} (${holPayOf(y,hol)==="city holiday"?"city holiday":"paid at "+holPayOf(y,hol)})`:""}</p></div>
+      <div class="group"><span class="gt">Tags</span>
+        <div class="tagpick">${tagList.map(t=>`<button data-c="${esc(t.code)}" aria-pressed="${sel.has(t.code)}"><span class="tg">${esc(t.code)}</span><span class="nm">${esc(t.name)}</span></button>`).join("")}</div></div>
+      <div class="group"><span class="gt">Shift worked</span>
+        <div class="shiftpick">${["M","N","X","O"].map(s=>`<button class="${s}" data-s="${s}" aria-pressed="${cur===s}">${SHIFT[s].name}${s===base?" (rotation)":""}</button>`).join("")}</div></div>
+      <div class="group"><span class="gt">Hours</span><div class="fields">
+        <div class="field"><label class="lbl" for="tiIn">Time in</label><input type="time" id="tiIn" value="${v("tiIn",e.timeIn)}"></div>
+        <div class="field"><label class="lbl" for="toIn">Time out</label><input type="time" id="toIn" value="${v("toIn",e.timeOut)}"></div>
+      </div>
+      <p class="sub">${def?`Leave blank for your normal ${def[0]}–${def[1]}. `:""}Fill these in when your hours were different, like a training day.</p></div>
+      <div class="group"><span class="gt">Leave</span><div class="fields">
+        <div class="field"><label class="lbl" for="lvIn">Leave hours</label><input type="number" id="lvIn" min="0" max="12" step="0.25" inputmode="decimal" placeholder="Full shift" value="${v("lvIn",e.leaveHours)}"></div>
+        <div class="field"></div>
+        <div class="field"><label class="lbl" for="lfIn">Leave from</label><input type="time" id="lfIn" value="${v("lfIn",e.leaveFrom)}"></div>
+        <div class="field"><label class="lbl" for="ltIn">Leave to</label><input type="time" id="ltIn" value="${v("ltIn",e.leaveTo)}"></div>
+      </div>
+      <p class="sub">AL, SL and PH count as the full shift. If you left early or came in late, enter the leave times and the hours fill in.</p></div>
+      <div class="group"><span class="gt">Overtime</span><div class="fields">
+        <div class="field"><label class="lbl" for="otIn">Overtime hours</label><input type="number" id="otIn" min="0" max="24" step="0.25" inputmode="decimal" placeholder="0" value="${v("otIn",e.otHours)}"></div>
+        <div class="field"></div>
+        <div class="field"><label class="lbl" for="ofIn">Overtime from</label><input type="time" id="ofIn" value="${v("ofIn",e.otFrom)}"></div>
+        <div class="field"><label class="lbl" for="otoIn">Overtime to</label><input type="time" id="otoIn" value="${v("otoIn",e.otTo)}"></div>
+      </div></div>
+      <div class="group"><label class="gt" for="noteIn">Note <span class="sub" style="font-weight:500">· goes in timesheet Comments</span></label>
+        <textarea id="noteIn" placeholder="e.g. OT case number 2026-00143256">${esc(v("noteIn",e.note))}</textarea></div>
+      <p class="err" id="dayErr" hidden></p>
+      <div class="row"><button class="btn grow" id="clr">Clear day</button><button class="btn" id="cancel">Cancel</button><button class="btn primary" id="save">Save</button></div>`);
+    document.querySelectorAll(".tagpick button").forEach(b=>b.onclick=()=>{const c=b.dataset.c;sel.has(c)?sel.delete(c):sel.add(c);b.setAttribute("aria-pressed",sel.has(c));});
+    document.querySelectorAll(".shiftpick button").forEach(b=>b.onclick=()=>{keep();shift=b.dataset.s===base?null:b.dataset.s;draw();});
+    const fill=(a,b2,out)=>()=>{const h=spanHrs($(a).value,$(b2).value);if(h!=null)$(out).value=h;};
+    $("lfIn").onchange=$("ltIn").onchange=fill("lfIn","ltIn","lvIn");
+    $("ofIn").onchange=$("otoIn").onchange=fill("ofIn","otoIn","otIn");
+    $("cancel").onclick=closeSheet;$("cancelTop").onclick=closeSheet;$("saveTop").onclick=()=>$("save").click();
+    $("clr").onclick=()=>writeDay(k,null);
+    $("save").onclick=()=>{
+      const num=id=>{const x=$(id).value;return x===""?null:Math.max(0,parseFloat(x)||0);};
+      const note=$("noteIn").value.trim(), ot=num("otIn")||0, lv=num("lvIn");
+      const ti=$("tiIn").value, to=$("toIn").value, lf=$("lfIn").value, lt=$("ltIn").value, of=$("ofIn").value, oto=$("otoIn").value;
+      if((ti&&!to)||(!ti&&to)){const er=$("dayErr");er.textContent="Fill in both Time in and Time out, or leave both blank.";er.hidden=false;return;}
+      if(ot>0)sel.add("OT");
+      const ordered=tagList.map(t=>t.code).filter(c=>sel.has(c)).concat([...sel].filter(c=>!tagList.some(t=>t.code===c)));
+      const rec={tags:ordered};
+      if(shift)rec.shift=shift;if(note)rec.note=note;
+      if(ti&&to){rec.timeIn=ti;rec.timeOut=to;}
+      if(ot>0){rec.otHours=ot;if(of&&oto){rec.otFrom=of;rec.otTo=oto;}}
+      if(lv!=null)rec.leaveHours=lv;
+      if(lf&&lt){rec.leaveFrom=lf;rec.leaveTo=lt;}
+      const any=ordered.length||shift||note||rec.timeIn||ot>0||rec.leaveHours!=null;
+      writeDay(k,any?rec:null);
+    };
+  };
+  draw();
+}
+// Saves close the editor right away (the calendar updates instantly) and sync in the background,
+// so a slow connection never leaves the page stuck. A failed save puts the day back and says so.
+async function writeDay(k,rec){
+  if(!db){showErr("Sign in to claude.ai to save. This change will not be kept.");return;}
+  const prev=days[k];
+  if(rec)days[k]=rec;else delete days[k];
+  closeSheet();render();
+  try{
+    if(rec)await db.doc("days/"+k).set(rec);else await db.doc("days/"+k).delete();
+  }catch(err){
+    if(prev)days[k]=prev;else delete days[k];render();
+    alertBanner("Your change to "+k+" didn't save ("+(err&&err.message||"connection problem")+"). Tap the day and save it again.");
+  }
+}
+function showErr(msg){const el=$("dayErr")||$("tagErr");if(el){el.textContent=msg;el.hidden=false;}else alertBanner(msg);}
+function alertBanner(msg){$("banner").textContent=msg;$("banner").hidden=false;}
+
+function openTags(){
+  const draw=()=>{
+    sheet(`<div><h3>Tag list</h3><p class="sub">These are the tags you can put on a day. Removing a tag here keeps it on days that already have it.</p></div>
+      <div>${tagList.map((t,i)=>`<div class="tagrow"><span class="tg">${esc(t.code)}</span><span class="nm">${esc(t.name)}</span><button data-i="${i}">Remove</button></div>`).join("")}</div>
+      <div style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Add a tag</span>
+      <form class="addtag" id="addF"><input type="text" id="newCode" maxlength="4" placeholder="Code" aria-label="Tag code" autocapitalize="characters"><input type="text" id="newName" maxlength="30" placeholder="Name, e.g. Court" aria-label="Tag name"><button class="btn primary" type="submit">Add</button></form></div>
+      <p class="err" id="tagErr" hidden></p>
+      <div class="row"><button class="btn grow" id="reset">Restore default tags</button><button class="btn primary" id="done">Done</button></div>`);
+    document.querySelectorAll(".tagrow button").forEach(b=>b.onclick=()=>{tagList.splice(+b.dataset.i,1);saveTags();draw();});
+    $("addF").addEventListener("submit",ev=>{ev.preventDefault();
+      const c=$("newCode").value.trim().toUpperCase(),n=$("newName").value.trim();
+      if(!c||!n){showErr("Enter a short code and a name.");return;}
+      if(tagList.some(t=>t.code===c)){showErr(c+" is already in the list.");return;}
+      tagList.push({code:c,name:n});saveTags();draw();});
+    $("reset").onclick=()=>{tagList=DEFAULT_TAGS.slice();saveTags();draw();};
+    $("done").onclick=closeSheet;
+  };
+  draw();
+}
+async function saveTags(){
+  render();
+  if(!db)return;
+  try{await db.doc("config/tags").set({list:tagList});}catch(err){showErr("Could not save tag list.");}
+}
+
+// ---------- Pay & leave view ----------
+const t12=t=>{const [h,m]=t.split(":").map(Number);return (h%12||12)+(m?":"+String(m).padStart(2,"0"):"")+(h<12?"a":"p");};
+const hrs=v=>(Math.round(v*100)/100).toLocaleString("en-US",{maximumFractionDigits:2});
+function renderPay(){
+  const today=dn(TY,TM,TD);
+  if(payF==null)payF=paydayForDate(today);
+  // balances
+  const nowB=balancesAt(today), endB=balancesAt(dn(TY,11,31));
+  const asOfN=dn(...bal.asOf.split("-").map((v,i)=>i===1?+v-1:+v));
+  const card=(k,v,e)=>`<div><span class="k">${k}</span><span class="v">${hrs(v)}</span><span class="s">${e}</span></div>`;
+  $("bal").innerHTML=card("Vacation",nowB.vac,`hrs · ${hrs(endB.vac)} by Dec 31`)+card("Sick",nowB.sck,`hrs · ${hrs(endB.sck)} by Dec 31`)+card("Personal holiday",nowB.phd,`hrs · resets to ${hrs(bal.phdYearly!=null?bal.phdYearly:30)} Oct 1`);
+  $("balNote").textContent=`Starts from your paystub balances for the period ending ${fmtN(asOfN,{month:"short",day:"numeric",year:"numeric"})}. Adds ${hrs(bal.vacRate)} vacation and ${hrs(bal.sckRate)} sick hours each payday, and subtracts AL, SL and PH days you tag. Personal holiday hours reset each fiscal year on Oct 1. Updates automatically from here; use "Update from paystub" only if a paystub ever disagrees.`;
+  // used this year (payroll days)
+  const u={AL:0,SL:0,PH:0,ot:0,train:0};
+  for(let n=dn(TY,0,1);n<=dn(TY,11,31);n++){const p=payrollDay(n);for(const t in p.leave)u[t]+=p.leave[t];u.ot+=p.ot;u.train+=p.train;}
+  $("usedTitle").textContent="Used in "+TY;
+  const uc=(k,v)=>`<div><span class="k">${k}</span><span class="v">${hrs(v)}</span><span class="s">hrs</span></div>`;
+  $("used").innerHTML=uc("Annual",u.AL)+uc("Sick",u.SL)+uc("Pers. hol.",u.PH)+uc("Overtime",u.ot);
+  // pay period: Work Attendance Record layout
+  const [a,b]=periodOf(payF);
+  $("pTitle").textContent=`${fmtN(a,{month:"2-digit",day:"2-digit",year:"numeric"})} to ${fmtN(b,{month:"2-digit",day:"2-digit",year:"numeric"})}`;
+  const curF=paydayForDate(today), isCur=payF===curF;
+  $("pSub").innerHTML=`<span class="pbadge ${isCur?"cur":""}">${isCur?"● Current":payF<curF?"Past":"Upcoming"}</span> Paid ${fmtN(payF,{weekday:"short",month:"short",day:"numeric"})}${isCur?"":`<br><button class="link" id="pToCur">Go to current</button>`}`;
+  if(!isCur)$("pToCur").onclick=()=>{payF=curF;render();};
+  $("pTable").classList.toggle("cur",isCur);
+  const hh=t=>t?t.replace(":",""):"";
+  const fmtH=v=>hrs(v);
+  const ORDER=["RG","ST","AL","SL","CT","PH"], ORDER2=["OT","CW","CD","CB","FT"];
+  let html="",grand={};
+  for(let wk=0;wk<2;wk++){
+    const cols=[],tot={};
+    for(let i=0;i<7;i++){
+      const n=a+wk*7+i,p=payrollDay(n);
+      for(const c in p.codes)tot[c]=(tot[c]||0)+p.codes[c];
+      cols.push({n,p});
+    }
+    for(const c in tot)grand[c]=(grand[c]||0)+tot[c];
+    const cell=(f)=>cols.map(c=>`<td data-n="${c.n}">${f(c)||""}</td>`).join("");
+    const firstW=c=>c.p.items.find(w=>w.tin);
+    // pairs: main worked time; second pair = leave part when partial leave has times
+    const in1=c=>{const w=firstW(c);if(!w)return "";if(w.leaveFrom&&w.leaveFrom===w.tin)return hh(w.leaveTo);return hh(w.tin);};
+    const out1=c=>{const w=firstW(c);if(!w)return "";if(w.leaveFrom&&w.leaveFrom===w.tin)return hh(w.tout);return w.leaveFrom?hh(w.leaveFrom):hh(w.tout);};
+    const in2=c=>{const w=firstW(c);return w&&w.leaveFrom&&w.leaveFrom!==w.tin?hh(w.leaveFrom):(w&&w.leaveFrom?hh(w.tin):"");};
+    const out2=c=>{const w=firstW(c);return w&&w.leaveFrom&&w.leaveFrom!==w.tin?hh(w.leaveTo):(w&&w.leaveFrom?hh(w.leaveFrom):"");};
+    const total=c=>{const cs=Object.entries(c.p.codes).filter(([k])=>k!=="OT").sort((x,y)=>(x[0]==="RG"?-1:0)-(y[0]==="RG"?-1:0));return cs.length?cs.map(([k,v])=>`<b>${fmtH(v)} ${k}</b>`).join("<br>"):'<span class="offw">OFF</span>';};
+    const other=c=>c.p.ot?`<b>${fmtH(c.p.ot)} OT</b>`:"";
+    const oin=c=>{const w=c.p.items.find(w=>w.ot&&w.otFrom);return w?hh(w.otFrom):"";};
+    const oout=c=>{const w=c.p.items.find(w=>w.ot&&w.otTo);return w?hh(w.otTo):"";};
+    const hol=c=>{const h=holiday(...ymd(c.n));return h?`<span class="tsh">★ ${esc(h)}</span>`:"";};
+    const totBox=ORDER.map(k=>`<div><span>${k}:</span><b>${tot[k]?fmtH(tot[k]):""}</b></div>`).join("")+'<div class="sep"></div>'+ORDER2.map(k=>`<div><span>${k}:</span><b>${tot[k]?fmtH(tot[k]):""}</b></div>`).join("");
+    html+=`<div class="tsweek"><div class="tshead">${wk?"SECOND":"FIRST"} WEEK</div><div class="tsrow"><div class="tswrap"><table class="ts">
+      <tr><th>Day</th>${cols.map(c=>`<th>${fmtN(c.n,{weekday:"short"})}</th>`).join("")}</tr>
+      <tr><th>Date</th>${cols.map(c=>`<td class="dt">${fmtN(c.n,{month:"numeric",day:"numeric"})}</td>`).join("")}</tr>
+      <tr><th>Time in</th>${cell(in1)}</tr><tr><th>Time out</th>${cell(out1)}</tr>
+      <tr><th>Time in</th>${cell(in2)}</tr><tr><th>Time out</th>${cell(out2)}</tr>
+      <tr class="tot"><th>Total hours</th>${cell(total)}</tr>
+      <tr><th>Other payroll hours</th>${cell(other)}</tr>
+      <tr><th>Time in</th>${cell(oin)}</tr><tr><th>Time out</th>${cell(oout)}</tr>
+      <tr class="hl"><th></th>${cell(hol)}</tr>
+    </table></div><div class="tstot"><div class="tt">Total hours</div>${totBox}</div></div></div>`;
+  }
+  const comments=[];for(let n=a;n<=b;n++){const e=entryN(n);if(e&&e.note)comments.push(`${fmtN(n,{month:"2-digit",day:"2-digit"})}: ${esc(e.note)}`);}
+  const sum=Object.entries(grand).map(([k,v])=>`${fmtH(v)} ${k}`).join(" · ");
+  $("pTable").innerHTML=html+`<div class="tscom"><b>Comments:</b>${comments.length?`<ul class="tsul">${comments.map(c=>`<li>${c}</li>`).join("")}</ul>`:' <span class="offw">none</span>'}</div><div class="tscom"><b>Period total:</b> ${sum||"0"}</div>`;
+  $("pPrev").disabled=payF-14<dn(YEARS[0],0,1);$("pNext").disabled=payF+14>dn(YEARS[1],11,31);
+  $("pPrev").style.opacity=$("pPrev").disabled?.35:1;$("pNext").style.opacity=$("pNext").disabled?.35:1;
+}
+function openBal(){
+  sheet(`<div><h3>Update leave balances</h3><p class="sub">Copy these from page 2 of your latest paystub (the Accrual section). The app adds new hours each payday from there.</p></div>
+    <div class="fields">
+      <div class="field" style="grid-column:1/-1"><label class="lbl" for="bAsOf">Period end date on that paystub</label><input type="date" id="bAsOf" value="${bal.asOf}"></div>
+      <div class="field"><label class="lbl" for="bVac">VAC balance</label><input type="number" step="0.001" id="bVac" value="${bal.vac}"></div>
+      <div class="field"><label class="lbl" for="bVacR">VAC earned per check</label><input type="number" step="0.001" id="bVacR" value="${bal.vacRate}"></div>
+      <div class="field"><label class="lbl" for="bSck">SCK balance</label><input type="number" step="0.001" id="bSck" value="${bal.sck}"></div>
+      <div class="field"><label class="lbl" for="bSckR">SCK earned per check</label><input type="number" step="0.001" id="bSckR" value="${bal.sckRate}"></div>
+      <div class="field"><label class="lbl" for="bPhd">PHD balance</label><input type="number" step="0.001" id="bPhd" value="${bal.phd}"></div>
+      <div class="field"><label class="lbl" for="bPhdY">PHD hours each Oct 1</label><input type="number" step="1" id="bPhdY" value="${bal.phdYearly!=null?bal.phdYearly:30}"></div>
+    </div>
+    <p class="err" id="balErr" hidden></p>
+    <div class="row"><button class="btn" id="bCancel">Cancel</button><button class="btn primary" id="bSave">Save</button></div>`);
+  $("bCancel").onclick=closeSheet;
+  $("bSave").onclick=async()=>{
+    const v={asOf:$("bAsOf").value,vac:+$("bVac").value,vacRate:+$("bVacR").value,sck:+$("bSck").value,sckRate:+$("bSckR").value,phd:+$("bPhd").value,phdYearly:+$("bPhdY").value};
+    const er=$("balErr");
+    if(!/^\d{4}-\d\d-\d\d$/.test(v.asOf)||[v.vac,v.vacRate,v.sck,v.sckRate,v.phd].some(x=>!isFinite(x))){er.textContent="Fill in every box with a number and pick the period end date.";er.hidden=false;return;}
+    if(!db){er.textContent="Sign in to claude.ai to save balances.";er.hidden=false;return;}
+    try{await db.doc("config/balances").set(v);bal=v;closeSheet();render();}catch(err){er.textContent="Could not save. Try again.";er.hidden=false;}
+  };
+}
+
+// ---------- Backup / restore (moves data between the Claude page and the website) ----------
+function openBackup(){
+  sheet(`<div><h3>Back up or restore</h3><p class="sub">A backup file holds your tagged days, notes, tag list and leave balances. Use it to move your data to the other version of this app.</p></div>
+    <div class="group"><b>Back up</b><p class="sub">Saves a .json file with everything (${Object.keys(days).length} tagged days).</p><button class="btn primary" id="bkSave" style="justify-content:center">Save backup file</button></div>
+    <div class="group"><b>Restore</b><p class="sub">Adds the days from a backup file to this app. Days in the file replace the same days here; nothing else is deleted.</p><input type="file" id="bkFile" accept=".json,application/json"><button class="btn" id="bkLoad" style="justify-content:center">Restore from file</button></div>
+    <p class="err" id="bkErr" hidden></p>
+    <div class="row"><button class="btn" id="bkClose">Close</button></div>`);
+  $("bkClose").onclick=closeSheet;
+  const msg=(t,ok)=>{const e=$("bkErr");e.textContent=t;e.style.color=ok?"var(--fg)":"";e.hidden=false;};
+  $("bkSave").onclick=async()=>{
+    try{const dl=await cap("downloads");if(!dl)throw {message:"Saving files isn't available here."};
+      const data=JSON.stringify({app:"shift-schedule",v:1,saved:new Date().toISOString(),days,tags:tagList,balances:bal},null,1);
+      await dl.save({filename:"shift-schedule-backup-"+key(TY,TM,TD)+".json",data});msg("Backup saved.",true);
+    }catch(err){if(err&&err.code==="declined")return;msg((err&&err.message)||"Could not save the backup.");}
+  };
+  $("bkLoad").onclick=async()=>{
+    const f=$("bkFile").files[0];if(!f)return msg("Choose the backup file first.");
+    if(!db)return msg("Sign in first so the data can sync.");
+    try{const j=JSON.parse(await f.text());if(j.app!=="shift-schedule"||!j.days)throw 0;
+      const ks=Object.keys(j.days).filter(k=>/^\d{4}-\d\d-\d\d$/.test(k));
+      for(const k of ks)await db.doc("days/"+k).set(j.days[k]);
+      if(Array.isArray(j.tags)&&j.tags.length)await db.doc("config/tags").set({list:j.tags});
+      if(j.balances&&j.balances.asOf)await db.doc("config/balances").set(j.balances);
+      msg(`Restored ${ks.length} days, your tags and leave balances.`,true);
+    }catch(e){msg("That file isn't a Shift Schedule backup.");}
+  };
+}
+
+// ---------- Apple Calendar export (.ics) ----------
+function openICS(){
+  sheet(`<div><h3>Add to Apple Calendar</h3></div>
+    <div class="group"><b>Subscribe (recommended)</b><p class="sub">One tap. Your rotation, paydays and holidays stay in Apple Calendar and update by themselves, with a 1-hour reminder before each shift. Tags and overtime aren't included.</p>
+      <a class="btn primary" style="text-decoration:none;justify-content:center" href="https://risky1313.github.io/shift-calendar/subscribe.html" target="_blank" rel="noopener">Open subscribe page</a></div>
+    <div><b>Or save a one-time file</b><p class="sub">Makes a calendar file with your shifts for ${YEARS[0]} and ${YEARS[1]}, including your tags and shift changes.</p></div>
+    <div class="field"><label class="lbl" for="icsAlarm">Shift reminder</label>
+      <select id="icsAlarm"><option value="0">No reminder</option><option value="30">30 minutes before</option><option value="60" selected>1 hour before</option><option value="90">1.5 hours before</option><option value="120">2 hours before</option></select></div>
+    <label class="check"><input type="checkbox" id="icsPay" checked> Add paydays</label>
+    <label class="check"><input type="checkbox" id="icsHol" checked> Add holidays</label>
+    <label class="check"><input type="checkbox" id="icsPast"> Include days before today</label>
+    <p class="sub" ${window.WEB?"hidden":""}>It saves as a .zip (the only way this page is allowed to save it). <b>iPhone:</b> tap Save to Files, open the Files app, tap the zip to unzip it, then tap <b>work-shifts….ics</b> and choose Add All. <b>Mac:</b> the zip opens by itself in Downloads; double-click the .ics and Calendar adds it. Put it in a new calendar called "Work", so after a big change you can delete that calendar and add a fresh file.</p>
+    <p class="err" id="icsErr" hidden></p>
+    <div class="row"><button class="btn" id="icsClose">Close</button><button class="btn primary" id="icsSave">Save calendar file</button></div>`);
+  $("icsClose").onclick=closeSheet;
+  $("icsSave").onclick=async()=>{
+    const er=$("icsErr");er.hidden=true;
+    const txt=buildICS(+$("icsAlarm").value,$("icsPay").checked,$("icsHol").checked,$("icsPast").checked);
+    try{
+      const dl=await cap("downloads");
+      if(!dl)throw {message:"Saving files isn't available in this view. Open the page in Safari while signed in to claude.ai."};
+      const nm=`work-shifts-${YEARS[0]}-${YEARS[1]}`;
+      if(window.WEB){await dl.save({filename:nm+".ics",data:new Blob([txt],{type:"text/calendar"})});er.textContent="Done. If Calendar didn't open, open the file from Downloads.";}
+      else{await dl.save({filename:nm+".zip",data:makeZip(nm+".ics",txt)});
+      er.textContent="Saved. Now open the zip, then tap the calendar file inside to add it.";}er.style.color="var(--fg)";er.hidden=false;
+    }catch(err){if(err&&err.code==="declined")return;er.style.color="";er.textContent=(err&&err.message)||"Could not save the file.";er.hidden=false;}
+  };
+}
+// Minimal "stored" (uncompressed) zip with one file, since .ics can't be saved directly
+function makeZip(name,text){
+  const data=new TextEncoder().encode(text),fn=new TextEncoder().encode(name);
+  let c,crc=-1;const T=makeZip.t||(makeZip.t=Array.from({length:256},(_,n)=>{c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;return c>>>0;}));
+  for(const b of data)crc=T[(crc^b)&255]^(crc>>>8);crc=(crc^-1)>>>0;
+  const d=new Date(),dt=((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1)),dd=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate());
+  const lh=new DataView(new ArrayBuffer(30)),ch=new DataView(new ArrayBuffer(46)),end=new DataView(new ArrayBuffer(22));
+  lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(10,dt,true);lh.setUint16(12,dd,true);
+  lh.setUint32(14,crc,true);lh.setUint32(18,data.length,true);lh.setUint32(22,data.length,true);lh.setUint16(26,fn.length,true);
+  ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(12,dt,true);ch.setUint16(14,dd,true);
+  ch.setUint32(16,crc,true);ch.setUint32(20,data.length,true);ch.setUint32(24,data.length,true);ch.setUint16(28,fn.length,true);ch.setUint32(42,0,true);
+  const cdOff=30+fn.length+data.length,cdLen=46+fn.length;
+  end.setUint32(0,0x06054b50,true);end.setUint16(8,1,true);end.setUint16(10,1,true);end.setUint32(12,cdLen,true);end.setUint32(16,cdOff,true);
+  return new Blob([lh,fn,data,ch,fn,end],{type:"application/zip"});
+}
+function buildICS(alarmMin,withPay,withHol,withPast){
+  const p2=v=>String(v).padStart(2,"0");
+  const dt=(n,h,mi)=>{const [y,m,d]=ymd(n);return `${y}${p2(m+1)}${p2(d)}T${p2(h)}${p2(mi)}00`;};
+  const dd=n=>{const [y,m,d]=ymd(n);return `${y}${p2(m+1)}${p2(d)}`;};
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
+  const escT=t=>String(t).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Shift Schedule//EN","CALSCALE:GREGORIAN","METHOD:PUBLISH","X-WR-CALNAME:Work Shifts"];
+  const allDay=(n,uid,sum,desc)=>{L.push("BEGIN:VEVENT","UID:"+uid,"DTSTAMP:"+stamp,"DTSTART;VALUE=DATE:"+dd(n),"DTEND;VALUE=DATE:"+dd(n+1),"SUMMARY:"+escT(sum),"TRANSP:TRANSPARENT");if(desc)L.push("DESCRIPTION:"+escT(desc));L.push("END:VEVENT");};
+  const TIMES={M:[6,16,0],N:[14,0,1],X:[21,7,1]}; // start hour, end hour, end is next day
+  const from=withPast?dn(YEARS[0],0,1):dn(TY,TM,TD), to=dn(YEARS[1],11,31);
+  for(let n=from;n<=to;n++){
+    const [y,m,d]=ymd(n), k=key(y,m,d), s=shiftN(n), e=entryN(n), tags=(e&&e.tags)||[];
+    const lt=tags.find(t=>LEAVE[t]);
+    const desc=[tags.length?tags.map(t=>t+" "+tagName(t)).join(", "):"",e&&e.otHours?`OT ${e.otHours} hrs`:"",e&&e.note?e.note:""].filter(Boolean).join("\n");
+    if(s!=="O"){
+      if(lt&&!(e.leaveHours!=null&&+e.leaveHours<10)){allDay(n,k+"-shift@shift-schedule",tagName(lt)+` (${SHIFT[s].name} shift)`,desc);}
+      else{
+        let [h1,h2,nx]=TIMES[s],m1=0,m2=0;
+        if(e&&e.timeIn&&e.timeOut){[h1,m1]=e.timeIn.split(":").map(Number);[h2,m2]=e.timeOut.split(":").map(Number);nx=crosses(e.timeIn,e.timeOut)||e.timeOut==="00:00"?1:0;}
+        L.push("BEGIN:VEVENT","UID:"+k+"-shift@shift-schedule","DTSTAMP:"+stamp,"DTSTART:"+dt(n,h1,m1),"DTEND:"+dt(n+nx,h2,m2),
+          "SUMMARY:"+escT(SHIFT[s].name+" shift"+(tags.length?" · "+tags.join(", "):"")),"LOCATION:"+escT(SHIFT[s].hours));
+        if(desc)L.push("DESCRIPTION:"+escT(desc));
+        if(alarmMin>0)L.push("BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+escT(SHIFT[s].name+" shift starts soon"),"TRIGGER:-PT"+alarmMin+"M","END:VALARM");
+        L.push("END:VEVENT");
+      }
+    }else if(tags.length||(e&&e.otHours)){allDay(n,k+"-shift@shift-schedule",tags.length?tags.map(tagName).join(", "):"Overtime",desc);}
+    if(withPay&&isPayN(n))allDay(n,k+"-pay@shift-schedule","Payday","");
+    const hol=withHol&&holiday(y,m,d);if(hol)allDay(n,k+"-hol@shift-schedule","★ "+hol,(holPayOf(y,hol)==="city holiday"?"City holiday":`City holiday, paid at ${holPayOf(y,hol)}`));
+  }
+  L.push("END:VCALENDAR");
+  // fold long lines at 74 octets-ish
+  return L.map(l=>{let o="";while(l.length>73){o+=l.slice(0,73)+"\r\n ";l=l.slice(73);}return o+l;}).join("\r\n")+"\r\n";
+}
+
+// ---------- Share image ----------
+// Poster style: navy month bars, soft shift colors, number-only cells, payday outlines, holiday stars. Rotation only: no tags or OT.
+const IMG={bg:"#ffffff",fg:"#1b2433",muted:"#5c6677",line:"#d7dce4",navy:"#1d3557",
+  M:"#fbdf6e",N:"#f2938a",X:"#7fd0a3",O:"#ffffff"};
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+const F=(w,px)=>`${w} ${px}px "Public Sans", system-ui, sans-serif`;
+function drawCal(ctx,x,y,w,yr,m,big){
+  const C=IMG, hb=big?78:46, r=big?10:7;
+  ctx.beginPath();ctx.moveTo(x,y+hb);ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);ctx.lineTo(x+w,y+hb);ctx.closePath();
+  ctx.fillStyle=C.navy;ctx.fill();
+  ctx.fillStyle="#ffffff";ctx.font=F(700,big?38:23);ctx.textBaseline="middle";ctx.textAlign="left";
+  ctx.fillText(big?MONTHS[m]+" "+yr:MONTHS[m],x+(big?24:14),y+hb/2+1);
+  const cw=w/7, dowH=big?48:32, ch=big?cw*.86:cw*.68, top=y+hb+dowH;
+  ctx.font=F(700,big?20:14);ctx.fillStyle=C.muted;ctx.textAlign="center";
+  DOW.forEach((t,i)=>ctx.fillText(t,x+i*cw+cw/2,y+hb+dowH/2+1));
+  const first=new Date(yr,m,1).getDay(), n=new Date(yr,m+1,0).getDate();
+  for(let d=1;d<=n;d++){
+    const p=first+d-1, cx=x+(p%7)*cw, yy=top+Math.floor(p/7)*ch, s=baseShift(yr,m,d);
+    ctx.fillStyle=C[s];ctx.fillRect(cx,yy,cw,ch);
+    ctx.strokeStyle=C.line;ctx.lineWidth=1;ctx.strokeRect(cx+.5,yy+.5,cw-1,ch-1);
+    if(isPayday(yr,m,d)){rr(ctx,cx+(big?5:3),yy+(big?5:3),cw-(big?10:6),ch-(big?10:6),big?6:4);ctx.strokeStyle=C.fg;ctx.lineWidth=big?4:2.6;ctx.stroke();}
+    ctx.fillStyle=C.fg;ctx.font=F(s==="O"?400:700,big?30:18);ctx.textAlign="center";
+    const hol=holiday(yr,m,d);
+    ctx.fillText(d,cx+cw/2,yy+ch/2+(big&&hol?-8:1));
+    if(hol){
+      ctx.font=F(700,big?20:12);ctx.fillText("★",cx+cw-(big?16:9),yy+(big?18:10));
+      if(big){ctx.font=F(600,13);ctx.fillText(hol.replace(" Day",""),cx+cw/2,yy+ch/2+22);}
+    }
+  }
+  // Holiday index under the month: "★ 25  Thanksgiving"
+  let hy=top+Math.ceil((first+n)/7)*ch;
+  const hl=Object.entries(holidays(yr)).filter(([k])=>+k.slice(5,7)===m+1).sort();
+  if(hl.length){
+    const fs=big?20:16, lh=big?30:23;hy+=big?14:10;
+    ctx.textAlign="left";ctx.textBaseline="middle";
+    hl.forEach(([k,nm])=>{const d=+k.slice(8);
+      ctx.fillStyle=C.fg;ctx.font=F(700,fs);ctx.fillText("★ "+d,x+2,hy+lh/2);
+      ctx.fillStyle=C.muted;ctx.font=F(500,fs);ctx.fillText(nm,x+(big?62:46),hy+lh/2);hy+=lh;});
+  }
+  return hy-y;
+}
+function drawLegend(ctx,x,y,big){
+  const C=IMG, fs=big?22:24, sw=big?26:28;
+  const items=[["M","Morning"],["X","Night"],["N","Afternoon"],["P","Payday"],["H","Holiday"],["T","White dates = days off"]];
+  ctx.font=F(500,fs);ctx.textBaseline="middle";ctx.textAlign="left";let cx=x;
+  items.forEach(([k,t])=>{
+    if(k==="T"){ctx.fillStyle=C.muted;ctx.fillText(t,cx,y);return;}
+    if(k==="H"){ctx.fillStyle=C.fg;ctx.font=F(700,fs+4);ctx.fillText("★",cx+2,y+1);ctx.font=F(500,fs);}
+    else{rr(ctx,cx,y-sw/2,sw,sw,4);if(k==="P"){ctx.strokeStyle=C.fg;ctx.lineWidth=3;ctx.stroke();}else{ctx.fillStyle=C[k];ctx.fill();}}
+    ctx.fillStyle=C.fg;ctx.fillText(t,cx+sw+10,y);cx+=sw+10+ctx.measureText(t).width+(big?28:44);
+  });
+}
+async function makeImage(){
+  try{await document.fonts.ready;}catch(e){}
+  const C=IMG, cv=document.createElement("canvas"), ctx=cv.getContext("2d");
+  const foot=(y,W,P,size)=>{ctx.fillStyle=C.muted;ctx.font=F(400,size);ctx.textAlign="left";ctx.textBaseline="alphabetic";ctx.fillText("Morning 6 AM – 4 PM  ·  Afternoon 2 PM – 12 AM  ·  Night 9 PM – 7 AM  ·  4 on, 3 off",P,y);};
+  if(view==="month"){
+    const W=1200,P=56;cv.width=W;cv.height=1400;
+    ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,cv.height);
+    ctx.fillStyle=C.navy;ctx.font=F(700,44);ctx.textBaseline="alphabetic";ctx.fillText("WORK SCHEDULE",P,P+40);
+    drawLegend(ctx,P,P+96,true);
+    const h=drawCal(ctx,P,P+140,W-P*2,year,month,true);
+    const H=P+140+h+70;foot(P+140+h+46,W,P,20);
+    const out=document.createElement("canvas");out.width=W;out.height=H;out.getContext("2d").drawImage(cv,0,0);return out;
+  }else{
+    const W=2000,P=64,cols=4,g=40,bw=(W-P*2-g*(cols-1))/cols;cv.width=W;cv.height=1600;
+    ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,cv.height);
+    ctx.fillStyle=C.fg;ctx.font=F(700,100);ctx.textBaseline="alphabetic";ctx.fillText(String(year),P,P+86);
+    const yw=ctx.measureText(String(year)).width;
+    ctx.fillStyle=C.navy;ctx.font=F(700,46);ctx.fillText("WORK SCHEDULE",P+yw+40,P+80);
+    drawLegend(ctx,P,P+150,false);
+    let top=P+210,rowH=0;
+    for(let m=0;m<12;m++){
+      if(m%cols===0&&m>0){top+=rowH+g;rowH=0;}
+      rowH=Math.max(rowH,drawCal(ctx,P+(m%cols)*(bw+g),top,bw,year,m,false));
+    }
+    top+=rowH+56;foot(top,W,P,24);
+    const H=top+P-20;
+    const out=document.createElement("canvas");out.width=W;out.height=H;out.getContext("2d").drawImage(cv,0,0);return out;
+  }
+}
+
+async function openShare(){
+  const label=view==="month"?MONTHS[month]+" "+year:String(year);
+  sheet(`<div><h3>Share ${esc(label)}</h3><p class="sub">Making the image…</p></div>`);
+  const cv=await makeImage();
+  const url=cv.toDataURL("image/png");
+  const blob=await new Promise(r=>cv.toBlob(r,"image/png"));
+  const fname=(view==="month"?`schedule-${year}-${String(month+1).padStart(2,"0")}`:`schedule-${year}`)+".png";
+  sheet(`<div><h3>Share ${esc(label)}</h3><p class="sub">Shows your rotation, paydays and holidays only.</p></div>
+    <div class="savehint"><b>Save to Photos on iPhone:</b> press and hold the picture below, then tap <b>Save to Photos</b> (or <b>Share</b> to text it).<br><b>On Mac:</b> right-click the picture and choose <b>Copy Image</b> or <b>Add to Photos</b>, or use the Save file button.</div>
+    <img class="preview" src="${url}" alt="Shift schedule for ${esc(label)}" style="-webkit-touch-callout:default;user-select:auto">
+    <p class="err" id="shareErr" hidden></p>
+    <div class="row"><button class="btn" id="sClose">Close</button><button class="btn primary" id="sSave">Save file</button></div>`);
+  $("sClose").onclick=closeSheet;
+  $("sSave").onclick=async()=>{
+    const er=$("shareErr");er.hidden=true;
+    try{
+      const dl=await cap("downloads");
+      if(!dl)throw {message:"Saving isn't available here. Press and hold the picture instead."};
+      await dl.save({filename:fname,data:blob});
+    }catch(err){if(err&&err.code==="declined")return;er.textContent=(err&&err.message)||"Could not save. Press and hold the picture instead.";er.hidden=false;}
+  };
+}
+
+// ---------- Version label (bump APP_V with every change) ----------
+const APP_V="1.0.4";
+$("verLbl").textContent="Version "+APP_V+" · "+(window.WEB?"Website":"Claude");
+
+// ---------- Light / dark look (Auto follows the device) ----------
+const THEMES=["light","dark"],THEME_ICON={auto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="8"/><path d="M12 4v16" /><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>',light:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',dark:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>'};
+let theme=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";try{const t=localStorage.getItem("themeB");if(t==="light"||t==="dark")theme=t;}catch(e){}
+function applyTheme(){document.documentElement.setAttribute("data-theme",theme);
+  $("themeBtn").innerHTML=THEME_ICON[theme]+(theme==="light"?"Day":"Night");
+  const dark=theme==="dark";const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=dark?"#0b1220":"#13203a";}
+$("themeBtn").onclick=()=>{theme=theme==="dark"?"light":"dark";try{localStorage.setItem("themeB",theme);}catch(e){}applyTheme();};
+applyTheme();
+// Always open at the top (iPhone can keep an old scroll position, e.g. after the keyboard was up)
+try{history.scrollRestoration="manual";}catch(e){}
+const toTop=()=>{if(!document.getElementById("sheetHost")||!$("sheetHost").innerHTML)window.scrollTo(0,0);};
+toTop();addEventListener("load",toTop);addEventListener("pageshow",toTop);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&window.scrollY<200)toTop();});
+
+// ---------- Sync ----------
+// Same page runs in two places: inside Claude (window.claude) or on the website (window.WEB, set by web.js with Firebase).
+async function cap(name){if(window.WEB)return window.WEB[name]||null;return window.claude&&await window.claude.use(name);}
+render();
+(async()=>{
+  const timer=setTimeout(()=>{if(dbState==="connecting"&&!window.WEB){dbState="off";render();alertBanner("Sync isn't connecting. Your schedule still shows, but tags won't save until you open this page while signed in to claude.ai.");}},10000);
+  let d=null;
+  try{d=await cap("db");}catch(e){}
+  if(!d){clearTimeout(timer);dbState="off";render();alertBanner(window.WEB?"Sign in to save and sync your tags. Your rotation and paydays still show.":"Sign in to claude.ai to save and sync your tags. Your rotation and paydays still show.");return;}
+  db=d;
+  db.collection("days").onSnapshot(snap=>{
+    clearTimeout(timer);const nd={};snap.docs.forEach(doc=>{const v=doc.data();if(v)nd[doc.id]=v;});
+    days=nd;dbState="ok";$("banner").hidden=true;render();
+  },err=>{clearTimeout(timer);dbState="err";render();alertBanner("Sync stopped: "+(err&&err.message||"unknown error")+". Reload the page to reconnect.");});
+  db.doc("config/balances").onSnapshot(s=>{const v=s.exists&&s.data();if(v&&v.asOf)bal=Object.assign({},DEFAULT_BAL,v);render();},()=>{});
+  db.doc("config/tags").onSnapshot(s=>{const v=s.exists&&s.data();if(v&&Array.isArray(v.list)&&v.list.length)tagList=v.list;render();},()=>{});
+})();
+</script>

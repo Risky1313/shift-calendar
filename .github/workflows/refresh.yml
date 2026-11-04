@@ -1,0 +1,24 @@
+name: Refresh calendar
+on:
+  schedule:
+    - cron: "0 11 1 * *"   # 1st of every month, keeps the next year in the feed
+  workflow_dispatch:
+  push:
+    paths: ["gen.js"]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node gen.js
+      - name: Commit if changed
+        run: |
+          git config user.name "calendar-bot"
+          git config user.email "calendar-bot@users.noreply.github.com"
+          git add work-shifts.ics
+          git diff --cached --quiet || (git commit -m "Refresh calendar feed" && git push)
