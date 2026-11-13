@@ -18,7 +18,7 @@ body{margin:0}
 .gor{text-align:center;font-size:.85rem;margin:2px 0!important}
 .gcard .gsec{background:none;color:#3d5a99;padding:6px;font-weight:600}.gerr{color:#c0392b!important}
 </style>
-<script>window.APP_BUILD="1.0.7"</script>
+<script>window.APP_BUILD="1.0.8"</script>
 <script src="firebase-config.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -730,12 +730,19 @@ function openDay(y,m,d){
       if(r.total-r.lv>0)r.rows.push([`Worked`,`${hrs(r.total-r.lv)} ${code}`]);return r;}
     r.rows.push([`${lt} ${H(tin)}–${H(tout)} (whole shift)`,`${hrs(r.total)} ${lt}`]);return r;
   };
+  const otCalc=()=>{
+    if(!sel.has("OT"))return null;
+    const a=$("ofIn").value,b=$("otoIn").value,x=$("otIn").value;
+    const h=x!==""?Math.max(0,parseFloat(x)||0):(a&&b?spanHrs(a,b):0);
+    return {a,b,h,row:h>0?[`OT${a&&b?" "+H(a)+"–"+H(b):""}`,`${hrs(h)} OT`]:null};
+  };
   const upd=()=>{
-    const r=calc(), hasLv=!!r.lt;
+    const r=calc(), hasLv=!!r.lt, o=otCalc();
+    $("otNone").hidden=!!o;$("otBody").style.display=o?"flex":"none";
     $("lvNone").hidden=hasLv;$("lvBody").hidden=!hasLv;$("lvBody").style.display=hasLv?"flex":"none";
     document.querySelectorAll("#lvSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===mode));
     document.querySelectorAll("#lvBody [data-p]").forEach(p=>p.style.display=p.dataset.p===mode?"grid":"none");
-    $("daySum").innerHTML=`<span class="lbl">On your timesheet</span>`+(r.err?`<span class="warn">${esc(r.err)}</span>`:r.rows.map(([a,b])=>`<div class="r"><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join(""));
+    $("daySum").innerHTML=`<span class="lbl">On your timesheet</span>`+(r.err?`<span class="warn">${esc(r.err)}</span>`:r.rows.concat(o&&o.row?[o.row]:[]).map(([a,b])=>`<div class="r"><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join("")+(o&&!o.row?`<span class="warn">Enter your OT times or hours.</span>`:""));
   };
   const draw=()=>{
     const cur=shift||base, def=DEF_TIMES[cur];
@@ -769,14 +776,20 @@ function openDay(y,m,d){
             <div class="field"><label class="lbl" for="lvIn">Leave hours</label><input type="number" id="lvIn" min="0" max="24" step="0.25" inputmode="decimal" placeholder="From times" value="${v("lvIn",e.leaveHours)}"></div>
           </div>
         </div>
-        <div class="daysum" id="daySum" aria-live="polite"></div>
       </div>
-      <div class="group"><span class="gt">Overtime</span><div class="fields">
-        <div class="field"><label class="lbl" for="otIn">Overtime hours</label><input type="number" id="otIn" min="0" max="24" step="0.25" inputmode="decimal" placeholder="0" value="${v("otIn",e.otHours)}"></div>
-        <div class="field"></div>
-        <div class="field"><label class="lbl" for="ofIn">Overtime from</label><input type="time" id="ofIn"></div>
-        <div class="field"><label class="lbl" for="otoIn">Overtime to</label><input type="time" id="otoIn"></div>
-      </div></div>
+      <div class="group"><span class="gt">Overtime</span>
+        <p class="sub" id="otNone">To add overtime, pick OT in Tags above.</p>
+        <div id="otBody" style="display:flex;flex-direction:column;gap:10px">
+          <span class="lbl">When did you work overtime?</span>
+          <div class="fields">
+            <div class="field"><label class="lbl" for="ofIn">OT from</label><input type="time" id="ofIn"></div>
+            <div class="field"><label class="lbl" for="otoIn">OT to</label><input type="time" id="otoIn"></div>
+            <div class="field"><label class="lbl" for="otIn">OT hours</label><input type="number" id="otIn" min="0" max="24" step="0.25" inputmode="decimal" placeholder="From times" value="${v("otIn",e.otHours)}"></div>
+          </div>
+          <p class="sub">The hours fill in from the times. Type hours yourself only if they differ.</p>
+        </div>
+      </div>
+      <div class="daysum" id="daySum" aria-live="polite"></div>
       <div class="group"><label class="gt" for="noteIn">Note <span class="sub" style="font-weight:500">· goes in timesheet Comments</span></label>
         <textarea id="noteIn" placeholder="e.g. OT case number 2026-00143256">${esc(v("noteIn",e.note))}</textarea></div>
       <p class="err" id="dayErr" hidden></p>
@@ -800,23 +813,22 @@ function openDay(y,m,d){
     $("leftIn").value=v("leftIn",e.leaveTo&&e.leaveTo===tout0()&&e.leaveFrom!==tin0()?e.leaveFrom:"");
     if(!mode){mode=!e.leaveFrom||!e.leaveTo?(e.leaveHours!=null?"other":"whole"):e.leaveFrom===tin0()?"late":e.leaveTo===tout0()?"early":"other";}
     document.querySelectorAll("#lvSeg button").forEach(b=>b.onclick=()=>{mode=b.dataset.m;upd();});
-    ["tiIn","toIn","arrIn","leftIn","lfIn","ltIn","lvIn"].forEach(id=>{$(id).addEventListener("input",upd);$(id).addEventListener("change",upd);});
+    ["tiIn","toIn","arrIn","leftIn","lfIn","ltIn","lvIn","ofIn","otoIn","otIn"].forEach(id=>{$(id).addEventListener("input",upd);$(id).addEventListener("change",upd);});
     upd();
     $("cancel").onclick=closeSheet;$("cancelTop").onclick=closeSheet;$("saveTop").onclick=()=>$("save").click();
     $("clr").onclick=()=>writeDay(k,null);
     $("save").onclick=()=>{
       const num=id=>{const x=$(id).value;return x===""?null:Math.max(0,parseFloat(x)||0);};
-      const note=$("noteIn").value.trim(), ot=num("otIn")||0, lvc=calc();
+      const note=$("noteIn").value.trim(), lvc=calc(), oc=otCalc(), ot=oc?oc.h:0;
       if(lvc.lt&&lvc.err){const er=$("dayErr");er.textContent=lvc.err;er.hidden=false;return;}
       const lv=lvc.lt?lvc.lv:null, lf=lvc.lt?lvc.lf:null, lt=lvc.lt?lvc.lto:null;
       const chg=own("tiIn")||own("toIn"), ti=chg?$("tiIn").value:"", to=chg?$("toIn").value:"", of=$("ofIn").value, oto=$("otoIn").value;
       if((ti&&!to)||(!ti&&to)){const er=$("dayErr");er.textContent="Fill in both Time in and Time out, or leave both blank.";er.hidden=false;return;}
-      if(ot>0)sel.add("OT");
       const ordered=tagList.map(t=>t.code).filter(c=>sel.has(c)).concat([...sel].filter(c=>!tagList.some(t=>t.code===c)));
       const rec={tags:ordered};
       if(shift)rec.shift=shift;if(note)rec.note=note;
       if(ti&&to){rec.timeIn=ti;rec.timeOut=to;}
-      if(ot>0){rec.otHours=ot;if(of&&oto){rec.otFrom=of;rec.otTo=oto;}}
+      if(ot>0){rec.otHours=ot;if(oc.a&&oc.b){rec.otFrom=oc.a;rec.otTo=oc.b;}}
       if(lv!=null)rec.leaveHours=lv;
       if(lf&&lt){rec.leaveFrom=lf;rec.leaveTo=lt;}
       const any=ordered.length||shift||note||rec.timeIn||ot>0||rec.leaveHours!=null;
@@ -1175,7 +1187,7 @@ async function openShare(){
 }
 
 // ---------- Version label (bump APP_V with every change) ----------
-const APP_V="1.0.7";
+const APP_V="1.0.8";
 $("verLbl").textContent="Version "+APP_V+" · "+(window.WEB?"Website":"Claude");
 
 // ---------- Light / dark look (Auto follows the device) ----------
