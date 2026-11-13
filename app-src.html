@@ -230,6 +230,12 @@ table.ts tr.hl th,table.ts tr.hl td{border-bottom:0;padding-top:2px;background:t
 .shiftpick button.N{background:var(--aft);color:var(--aft-ink)}
 .shiftpick button.X{background:var(--night);color:var(--night-ink)}
 .shiftpick button[aria-pressed="true"]{opacity:1;box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--fg)}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.seg button{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:10px 6px;font-weight:700;font-size:.86rem;min-height:44px}
+.seg button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.daysum{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;font-size:.92rem}
+.daysum .r{display:flex;justify-content:space-between;gap:10px}.daysum .r b{white-space:nowrap}
+.daysum .warn{color:var(--muted)}
 .group{background:var(--raised);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px}
 .group .gt{font-weight:800;font-size:.95rem}
 .group .sub{margin:0}
@@ -662,11 +668,50 @@ function openDay(y,m,d){
   const k=key(y,m,d), e={...(days[k]||{})}, base=baseShift(y,m,d);
   let sel=new Set(e.tags||[]), shift=e.shift||null;
   const dt=new Date(y,m,d);
-  const keep=()=>{["tiIn","toIn","otIn","ofIn","otoIn","lvIn","lfIn","ltIn","noteIn"].forEach(id=>{const el=$(id);if(el)e["_"+id]=el.value;});};
+  // How partial leave was taken: whole shift, came in late, left early, or other times.
+  let mode=null;
+  const keep=()=>{["tiIn","toIn","otIn","ofIn","otoIn","lvIn","lfIn","ltIn","arrIn","leftIn","noteIn"].forEach(id=>{const el=$(id);if(el)e["_"+id]=el.value;});};
   const v=(id,dflt)=>e["_"+id]!=null?e["_"+id]:(dflt==null?"":dflt);
+  const H=t=>t.replace(":","");
+  // Works out what the timesheet will show for this day from the editor as it stands.
+  const calc=()=>{
+    const cur=shift||base, def=DEF_TIMES[cur];
+    const tin=$("tiIn").value||(def&&def[0])||"", tout=$("toIn").value||(def&&def[1])||"";
+    const lt=[...sel].find(t=>PAYCODES.includes(t)), code=sel.has("ST")?"ST":"RG";
+    const r={tin,tout,lt,code,total:tin&&tout?spanHrs(tin,tout):0,lf:null,lto:null,lv:null,err:null,rows:[]};
+    if(!tin||!tout){r.rows.push(["Off",""]);return r;}
+    const work=(a,b)=>[`Worked ${H(a)}–${H(b)}`,`${hrs(spanHrs(a,b))} ${code}`];
+    const leave=(a,b,h)=>[`${lt} ${H(a)}–${H(b)}`,`${hrs(h)} ${lt}`];
+    const inShift=t=>{const x=spanHrs(tin,t);return x!=null&&x<r.total;};
+    if(!lt){r.rows.push(work(tin,tout));return r;}
+    if(mode==="late"){const a=$("arrIn").value;
+      if(!a){r.err="Enter the time you got to work.";return r;}
+      if(!inShift(a)){r.err=`The time you got to work should be between ${H(tin)} and ${H(tout)}.`;return r;}
+      r.lf=tin;r.lto=a;r.lv=spanHrs(tin,a);r.rows.push(leave(tin,a,r.lv),work(a,tout));return r;}
+    if(mode==="early"){const a=$("leftIn").value;
+      if(!a){r.err="Enter the time you left work.";return r;}
+      if(!inShift(a)||a===tin){r.err=`The time you left should be between ${H(tin)} and ${H(tout)}.`;return r;}
+      r.lf=a;r.lto=tout;r.lv=spanHrs(a,tout);r.rows.push(work(tin,a),leave(a,tout,r.lv));return r;}
+    if(mode==="other"){const a=$("lfIn").value,b=$("ltIn").value,x=$("lvIn").value;
+      if(a&&b){r.lf=a;r.lto=b;}
+      r.lv=x!==""?Math.max(0,Math.min(r.total,parseFloat(x)||0)):(a&&b?spanHrs(a,b):null);
+      if(r.lv==null){r.err="Enter the leave times or the leave hours.";return r;}
+      r.rows.push([`${lt}${a&&b?" "+H(a)+"–"+H(b):""}`,`${hrs(r.lv)} ${lt}`]);
+      if(r.total-r.lv>0)r.rows.push([`Worked`,`${hrs(r.total-r.lv)} ${code}`]);return r;}
+    r.rows.push([`${lt} ${H(tin)}–${H(tout)} (whole shift)`,`${hrs(r.total)} ${lt}`]);return r;
+  };
+  const upd=()=>{
+    const r=calc(), hasLv=!!r.lt;
+    $("lvNone").hidden=hasLv;$("lvBody").hidden=!hasLv;$("lvBody").style.display=hasLv?"flex":"none";
+    document.querySelectorAll("#lvSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===mode));
+    document.querySelectorAll("#lvBody [data-p]").forEach(p=>p.style.display=p.dataset.p===mode?"grid":"none");
+    $("daySum").innerHTML=`<span class="lbl">On your timesheet</span>`+(r.err?`<span class="warn">${esc(r.err)}</span>`:r.rows.map(([a,b])=>`<div class="r"><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join(""));
+  };
   const draw=()=>{
     const cur=shift||base, def=DEF_TIMES[cur];
     const hol=holiday(y,m,d);
+    const tin0=()=>($("tiIn")&&$("tiIn").value)||e.timeIn||(def&&def[0])||"";
+    const tout0=()=>($("toIn")&&$("toIn").value)||e.timeOut||(def&&def[1])||"";
     sheet(`
       <div class="sheettop"><span class="grab" aria-hidden="true"></span><div class="row" style="justify-content:space-between"><button class="btn" id="cancelTop">‹ Back</button><button class="btn primary" id="saveTop">Save</button></div></div>
       <div><h3>${dt.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</h3>
@@ -675,18 +720,27 @@ function openDay(y,m,d){
         <div class="tagpick">${tagList.map(t=>`<button data-c="${esc(t.code)}" aria-pressed="${sel.has(t.code)}"><span class="tg">${esc(t.code)}</span><span class="nm">${esc(t.name)}</span></button>`).join("")}</div></div>
       <div class="group"><span class="gt">Shift worked</span>
         <div class="shiftpick">${["M","N","X","O"].map(s=>`<button class="${s}" data-s="${s}" aria-pressed="${cur===s}">${SHIFT[s].name}${s===base?" (rotation)":""}</button>`).join("")}</div></div>
-      <div class="group"><span class="gt">Hours</span><div class="fields">
-        <div class="field"><label class="lbl" for="tiIn">Time in</label><input type="time" id="tiIn"></div>
-        <div class="field"><label class="lbl" for="toIn">Time out</label><input type="time" id="toIn"></div>
+      <div class="group"><span class="gt">Shift times</span>
+        <p class="sub">${def?`Your normal shift is <b>${def[0].replace(":","")}–${def[1].replace(":","")}</b> and is used when these are blank. `:""}Only change these if the shift itself was different, like a training day. For leave, use the Leave section below.</p>
+        <div class="fields">
+        <div class="field"><label class="lbl" for="tiIn">Shift start</label><input type="time" id="tiIn"></div>
+        <div class="field"><label class="lbl" for="toIn">Shift end</label><input type="time" id="toIn"></div>
+      </div></div>
+      <div class="group"><span class="gt">Leave</span>
+        <p class="sub" id="lvNone">To take leave, pick AL, SL or PH in Tags above.</p>
+        <div id="lvBody" style="display:flex;flex-direction:column;gap:10px">
+          <span class="lbl">How much of the shift was leave?</span>
+          <div class="seg" id="lvSeg">${[["whole","Whole shift"],["late","Came in late"],["early","Left early"],["other","Other times"]].map(([m2,t])=>`<button type="button" data-m="${m2}">${t}</button>`).join("")}</div>
+          <div class="fields" data-p="late"><div class="field"><label class="lbl" for="arrIn">I got to work at</label><input type="time" id="arrIn"></div></div>
+          <div class="fields" data-p="early"><div class="field"><label class="lbl" for="leftIn">I left work at</label><input type="time" id="leftIn"></div></div>
+          <div class="fields" data-p="other">
+            <div class="field"><label class="lbl" for="lfIn">Leave from</label><input type="time" id="lfIn"></div>
+            <div class="field"><label class="lbl" for="ltIn">Leave to</label><input type="time" id="ltIn"></div>
+            <div class="field"><label class="lbl" for="lvIn">Leave hours</label><input type="number" id="lvIn" min="0" max="24" step="0.25" inputmode="decimal" placeholder="From times" value="${v("lvIn",e.leaveHours)}"></div>
+          </div>
+        </div>
+        <div class="daysum" id="daySum" aria-live="polite"></div>
       </div>
-      <p class="sub">${def?`Leave blank for your normal ${def[0]}–${def[1]}. `:""}Fill these in when your hours were different, like a training day.</p></div>
-      <div class="group"><span class="gt">Leave</span><div class="fields">
-        <div class="field"><label class="lbl" for="lvIn">Leave hours</label><input type="number" id="lvIn" min="0" max="12" step="0.25" inputmode="decimal" placeholder="Full shift" value="${v("lvIn",e.leaveHours)}"></div>
-        <div class="field"></div>
-        <div class="field"><label class="lbl" for="lfIn">Leave from</label><input type="time" id="lfIn"></div>
-        <div class="field"><label class="lbl" for="ltIn">Leave to</label><input type="time" id="ltIn"></div>
-      </div>
-      <p class="sub">AL, SL and PH count as the full shift. If you left early or came in late, enter the leave times and the hours fill in.</p></div>
       <div class="group"><span class="gt">Overtime</span><div class="fields">
         <div class="field"><label class="lbl" for="otIn">Overtime hours</label><input type="number" id="otIn" min="0" max="24" step="0.25" inputmode="decimal" placeholder="0" value="${v("otIn",e.otHours)}"></div>
         <div class="field"></div>
@@ -700,19 +754,27 @@ function openDay(y,m,d){
     // Time values are set here, not in the HTML: iOS's "Reset" button puts a time field back to its
     // HTML value, so leaving that blank makes Reset clear the field.
     [["tiIn",e.timeIn],["toIn",e.timeOut],["lfIn",e.leaveFrom],["ltIn",e.leaveTo],["ofIn",e.otFrom],["otoIn",e.otTo]].forEach(([id,d])=>{$(id).value=v(id,d);});
-    document.querySelectorAll(".tagpick button").forEach(b=>b.onclick=()=>{const c=b.dataset.c;sel.has(c)?sel.delete(c):sel.add(c);b.setAttribute("aria-pressed",sel.has(c));});
+    document.querySelectorAll(".tagpick button").forEach(b=>b.onclick=()=>{const c=b.dataset.c;sel.has(c)?sel.delete(c):sel.add(c);b.setAttribute("aria-pressed",sel.has(c));upd();});
     document.querySelectorAll(".shiftpick button").forEach(b=>b.onclick=()=>{keep();shift=b.dataset.s===base?null:b.dataset.s;draw();});
     // Hours follow the from/to times. Clearing a time clears hours that were filled in from the times.
     const fill=(a,b2,out)=>{let auto=null;const sp=()=>$(a).value&&$(b2).value?spanHrs($(a).value,$(b2).value):null;
       auto=sp();const f=()=>{const h=sp();if(h!=null){$(out).value=h;auto=h;}else if(auto!=null&&String($(out).value)===String(auto)){$(out).value="";auto=null;}};
       [a,b2].forEach(id=>{$(id).addEventListener("input",f);$(id).addEventListener("change",f);});};
     fill("lfIn","ltIn","lvIn");fill("ofIn","otoIn","otIn");
+    $("arrIn").value=v("arrIn",e.leaveFrom&&e.leaveFrom===tin0()?e.leaveTo:"");
+    $("leftIn").value=v("leftIn",e.leaveTo&&e.leaveTo===tout0()&&e.leaveFrom!==tin0()?e.leaveFrom:"");
+    if(!mode){mode=!e.leaveFrom||!e.leaveTo?(e.leaveHours!=null?"other":"whole"):e.leaveFrom===tin0()?"late":e.leaveTo===tout0()?"early":"other";}
+    document.querySelectorAll("#lvSeg button").forEach(b=>b.onclick=()=>{mode=b.dataset.m;upd();});
+    ["tiIn","toIn","arrIn","leftIn","lfIn","ltIn","lvIn"].forEach(id=>{$(id).addEventListener("input",upd);$(id).addEventListener("change",upd);});
+    upd();
     $("cancel").onclick=closeSheet;$("cancelTop").onclick=closeSheet;$("saveTop").onclick=()=>$("save").click();
     $("clr").onclick=()=>writeDay(k,null);
     $("save").onclick=()=>{
       const num=id=>{const x=$(id).value;return x===""?null:Math.max(0,parseFloat(x)||0);};
-      const note=$("noteIn").value.trim(), ot=num("otIn")||0, lv=num("lvIn");
-      const ti=$("tiIn").value, to=$("toIn").value, lf=$("lfIn").value, lt=$("ltIn").value, of=$("ofIn").value, oto=$("otoIn").value;
+      const note=$("noteIn").value.trim(), ot=num("otIn")||0, lvc=calc();
+      if(lvc.lt&&lvc.err){const er=$("dayErr");er.textContent=lvc.err;er.hidden=false;return;}
+      const lv=lvc.lt?lvc.lv:null, lf=lvc.lt?lvc.lf:null, lt=lvc.lt?lvc.lto:null;
+      const ti=$("tiIn").value, to=$("toIn").value, of=$("ofIn").value, oto=$("otoIn").value;
       if((ti&&!to)||(!ti&&to)){const er=$("dayErr");er.textContent="Fill in both Time in and Time out, or leave both blank.";er.hidden=false;return;}
       if(ot>0)sel.add("OT");
       const ordered=tagList.map(t=>t.code).filter(c=>sel.has(c)).concat([...sel].filter(c=>!tagList.some(t=>t.code===c)));
@@ -1078,7 +1140,7 @@ async function openShare(){
 }
 
 // ---------- Version label (bump APP_V with every change) ----------
-const APP_V="1.0.6";
+const APP_V="1.0.7";
 $("verLbl").textContent="Version "+APP_V+" · "+(window.WEB?"Website":"Claude");
 
 // ---------- Light / dark look (Auto follows the device) ----------
