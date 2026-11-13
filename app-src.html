@@ -676,32 +676,37 @@ function openDay(y,m,d){
       <div class="group"><span class="gt">Shift worked</span>
         <div class="shiftpick">${["M","N","X","O"].map(s=>`<button class="${s}" data-s="${s}" aria-pressed="${cur===s}">${SHIFT[s].name}${s===base?" (rotation)":""}</button>`).join("")}</div></div>
       <div class="group"><span class="gt">Hours</span><div class="fields">
-        <div class="field"><label class="lbl" for="tiIn">Time in</label><input type="time" id="tiIn" value="${v("tiIn",e.timeIn)}"></div>
-        <div class="field"><label class="lbl" for="toIn">Time out</label><input type="time" id="toIn" value="${v("toIn",e.timeOut)}"></div>
+        <div class="field"><label class="lbl" for="tiIn">Time in</label><input type="time" id="tiIn"></div>
+        <div class="field"><label class="lbl" for="toIn">Time out</label><input type="time" id="toIn"></div>
       </div>
       <p class="sub">${def?`Leave blank for your normal ${def[0]}–${def[1]}. `:""}Fill these in when your hours were different, like a training day.</p></div>
       <div class="group"><span class="gt">Leave</span><div class="fields">
         <div class="field"><label class="lbl" for="lvIn">Leave hours</label><input type="number" id="lvIn" min="0" max="12" step="0.25" inputmode="decimal" placeholder="Full shift" value="${v("lvIn",e.leaveHours)}"></div>
         <div class="field"></div>
-        <div class="field"><label class="lbl" for="lfIn">Leave from</label><input type="time" id="lfIn" value="${v("lfIn",e.leaveFrom)}"></div>
-        <div class="field"><label class="lbl" for="ltIn">Leave to</label><input type="time" id="ltIn" value="${v("ltIn",e.leaveTo)}"></div>
+        <div class="field"><label class="lbl" for="lfIn">Leave from</label><input type="time" id="lfIn"></div>
+        <div class="field"><label class="lbl" for="ltIn">Leave to</label><input type="time" id="ltIn"></div>
       </div>
       <p class="sub">AL, SL and PH count as the full shift. If you left early or came in late, enter the leave times and the hours fill in.</p></div>
       <div class="group"><span class="gt">Overtime</span><div class="fields">
         <div class="field"><label class="lbl" for="otIn">Overtime hours</label><input type="number" id="otIn" min="0" max="24" step="0.25" inputmode="decimal" placeholder="0" value="${v("otIn",e.otHours)}"></div>
         <div class="field"></div>
-        <div class="field"><label class="lbl" for="ofIn">Overtime from</label><input type="time" id="ofIn" value="${v("ofIn",e.otFrom)}"></div>
-        <div class="field"><label class="lbl" for="otoIn">Overtime to</label><input type="time" id="otoIn" value="${v("otoIn",e.otTo)}"></div>
+        <div class="field"><label class="lbl" for="ofIn">Overtime from</label><input type="time" id="ofIn"></div>
+        <div class="field"><label class="lbl" for="otoIn">Overtime to</label><input type="time" id="otoIn"></div>
       </div></div>
       <div class="group"><label class="gt" for="noteIn">Note <span class="sub" style="font-weight:500">· goes in timesheet Comments</span></label>
         <textarea id="noteIn" placeholder="e.g. OT case number 2026-00143256">${esc(v("noteIn",e.note))}</textarea></div>
       <p class="err" id="dayErr" hidden></p>
       <div class="row"><button class="btn grow" id="clr">Clear day</button><button class="btn" id="cancel">Cancel</button><button class="btn primary" id="save">Save</button></div>`);
+    // Time values are set here, not in the HTML: iOS's "Reset" button puts a time field back to its
+    // HTML value, so leaving that blank makes Reset clear the field.
+    [["tiIn",e.timeIn],["toIn",e.timeOut],["lfIn",e.leaveFrom],["ltIn",e.leaveTo],["ofIn",e.otFrom],["otoIn",e.otTo]].forEach(([id,d])=>{$(id).value=v(id,d);});
     document.querySelectorAll(".tagpick button").forEach(b=>b.onclick=()=>{const c=b.dataset.c;sel.has(c)?sel.delete(c):sel.add(c);b.setAttribute("aria-pressed",sel.has(c));});
     document.querySelectorAll(".shiftpick button").forEach(b=>b.onclick=()=>{keep();shift=b.dataset.s===base?null:b.dataset.s;draw();});
-    const fill=(a,b2,out)=>()=>{const h=spanHrs($(a).value,$(b2).value);if(h!=null)$(out).value=h;};
-    $("lfIn").onchange=$("ltIn").onchange=fill("lfIn","ltIn","lvIn");
-    $("ofIn").onchange=$("otoIn").onchange=fill("ofIn","otoIn","otIn");
+    // Hours follow the from/to times. Clearing a time clears hours that were filled in from the times.
+    const fill=(a,b2,out)=>{let auto=null;const sp=()=>$(a).value&&$(b2).value?spanHrs($(a).value,$(b2).value):null;
+      auto=sp();const f=()=>{const h=sp();if(h!=null){$(out).value=h;auto=h;}else if(auto!=null&&String($(out).value)===String(auto)){$(out).value="";auto=null;}};
+      [a,b2].forEach(id=>{$(id).addEventListener("input",f);$(id).addEventListener("change",f);});};
+    fill("lfIn","ltIn","lvIn");fill("ofIn","otoIn","otIn");
     $("cancel").onclick=closeSheet;$("cancelTop").onclick=closeSheet;$("saveTop").onclick=()=>$("save").click();
     $("clr").onclick=()=>writeDay(k,null);
     $("save").onclick=()=>{
@@ -804,11 +809,18 @@ function renderPay(){
     for(const c in tot)grand[c]=(grand[c]||0)+tot[c];
     const cell=(f)=>cols.map(c=>`<td data-n="${c.n}">${f(c)||""}</td>`).join("");
     const firstW=c=>c.p.items.find(w=>w.tin);
-    // pairs: main worked time; second pair = leave part when partial leave has times
-    const in1=c=>{const w=firstW(c);if(!w)return "";if(w.leaveFrom&&w.leaveFrom===w.tin)return hh(w.leaveTo);return hh(w.tin);};
-    const out1=c=>{const w=firstW(c);if(!w)return "";if(w.leaveFrom&&w.leaveFrom===w.tin)return hh(w.tout);return w.leaveFrom?hh(w.leaveFrom):hh(w.tout);};
-    const in2=c=>{const w=firstW(c);return w&&w.leaveFrom&&w.leaveFrom!==w.tin?hh(w.leaveFrom):(w&&w.leaveFrom?hh(w.tin):"");};
-    const out2=c=>{const w=firstW(c);return w&&w.leaveFrom&&w.leaveFrom!==w.tin?hh(w.leaveTo):(w&&w.leaveFrom?hh(w.leaveFrom):"");};
+    // Rows in time order. Came in late: leave from shift start to leave end, then work to shift end
+    // (e.g. AL 1400-1500, RG 1500-0000). Left early: work to leave start, then leave to shift end.
+    // Leave in the middle: the two worked parts (the gap is the leave).
+    const mins=t=>{const [h,m]=String(t).split(":").map(Number);return h*60+(m||0);};
+    const segs=w=>{if(!w)return [];if(!w.leaveFrom||!w.leaveTo)return [[w.tin,w.tout]];
+      const s0=mins(w.tin),off=t=>((mins(t)-s0)%1440+1440)%1440,E=off(w.tout)||1440,a=off(w.leaveFrom),b=off(w.leaveTo)||1440;
+      if(a>=E||b>E||a>=b)return [[w.tin,w.tout]];
+      if(a===0)return b>=E?[[w.tin,w.tout]]:[[w.tin,w.leaveTo],[w.leaveTo,w.tout]];
+      if(b>=E)return [[w.tin,w.leaveFrom],[w.leaveFrom,w.tout]];
+      return [[w.tin,w.leaveFrom],[w.leaveTo,w.tout]];};
+    const seg=(i,j)=>c=>{const p=segs(firstW(c))[i];return p?hh(p[j]):"";};
+    const in1=seg(0,0),out1=seg(0,1),in2=seg(1,0),out2=seg(1,1);
     const total=c=>{const cs=Object.entries(c.p.codes).filter(([k])=>k!=="OT").sort((x,y)=>(x[0]==="RG"?-1:0)-(y[0]==="RG"?-1:0));return cs.length?cs.map(([k,v])=>`<b>${fmtH(v)} ${k}</b>`).join("<br>"):'<span class="offw">OFF</span>';};
     const other=c=>c.p.ot?`<b>${fmtH(c.p.ot)} OT</b>`:"";
     const oin=c=>{const w=c.p.items.find(w=>w.ot&&w.otFrom);return w?hh(w.otFrom):"";};
@@ -1066,7 +1078,7 @@ async function openShare(){
 }
 
 // ---------- Version label (bump APP_V with every change) ----------
-const APP_V="1.0.5";
+const APP_V="1.0.6";
 $("verLbl").textContent="Version "+APP_V+" · "+(window.WEB?"Website":"Claude");
 
 // ---------- Light / dark look (Auto follows the device) ----------
